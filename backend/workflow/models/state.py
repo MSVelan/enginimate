@@ -1,57 +1,65 @@
-from pydantic import BaseModel, Field
-from typing import Annotated
-import operator
+from typing import Literal
 from uuid import uuid4
-from backend.workflow.agents.planner import WorkerStep
 
+from pydantic import BaseModel, Field
 
-class WorkerOutput(BaseModel):
-    step_id: int = Field(default=0, description="Step number for scene creation")
-    url: str = Field(default="", description="Uploaded URL of the generated video")
-
-
-class WorkerState(BaseModel):
-    step_id: int = Field(default=0, description="Step number for scene creation")
-    description: str = Field(default="", description="Description of the step")
-    docs: str = Field(
-        default="",
-        description="Most relevant documentation of manim \
-to assist in writing python code using manim-ce library for the given description",
-    )
-    feedback: str = Field(default="", description="Feedback to improve the python code")
-    code: str = Field(
-        default="",
-        description="Generated python code using manim-ce \
-library for the given description",
-    )
-    code_retry_or_not: str = Field(
-        default="",
-        description="Whether to retry code \
-generation or not",
-    )
-    url: str = Field(default="", description="Uploaded URL of the generated video")
-    completed_steps: Annotated[list[WorkerOutput], operator.add] = Field(
-        default_factory=list,
-        description="List of completed steps with their outputs",
-    )  # Workers write to this in parallel, list of WorkerOutput
+from backend.workflow.nodes.query_decomposer import QueryDecomposerOutput
+from backend.workflow.nodes.reasoning_agent import VideoCreationStep
 
 
 class State(BaseModel):
     uuid: str = Field(default=uuid4().hex, description="Unique identifier for client")
-    prompt: str = Field(default="", description="User prompt for scene generation")
-    steps: list[WorkerStep] = Field(
-        default_factory=list, description="List of planned steps for the scene"
-    )
-    completed_steps: Annotated[list[WorkerOutput], operator.add] = Field(
+    query: str = Field(default="", description="User query for scene generation")
+    steps: list[VideoCreationStep] = Field(
         default_factory=list,
-        description="List of completed steps with their outputs",
-    )  # Workers write to this in parallel, list of WorkerOutput
+        description="List of \
+        planned steps for the scene in sequential order",
+    )
+    current_step_description: str = Field(
+        default="",
+        description="Description of \
+        current step for scene creation",
+    )
+    # Write after code generation of each major step
+    completed_steps: int = Field(default=0, description="Total completed steps")
+    prompts: QueryDecomposerOutput = Field(
+        default_factory=dict,
+        description="\
+        List of prompts for retrieval of relevant documents in the RAG pipeline",
+    )
+    formatted_docs: str = Field(
+        default="",
+        description="Content of retrieved \
+        relevant documents",
+    )
+    code_generated: str = Field(
+        default="",
+        description="Correct code generated so far \
+        until the current step",
+    )
+    error: str = Field(default="", description="Error generated on code execution")
+    feedback: list[str] = Field(
+        default_factory=list,
+        description="List of \
+        constructive feedback for improving the current code",
+    )
+    done_code_generation: Literal["yes", "no"] = Field(
+        default="no",
+        description="\
+        Code generation for all steps is done or not",
+    )
+    url: str = Field(
+        default="",
+        description="Final video url after \
+        uploading to cloudinary",
+    )
     success: bool = Field(
-        default=True, description="Indicates if the pipeline completed successfully"
+        default=True,
+        description="Indicates if the pipeline has \
+        completed successfully",
     )
     error_message: str = Field(
-        default="", description="Error message if the pipeline failed"
-    )
-    sorted_urls: list[str] = Field(
-        default_factory=list, description="List of video URLs sorted by step_id"
+        default="",
+        description="Error message if the \
+        pipeline failed",
     )

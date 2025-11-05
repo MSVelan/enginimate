@@ -1,20 +1,19 @@
-import re
-import os
 import asyncio
 import concurrent.futures
-
-from tenacity import retry, stop_after_attempt, wait_fixed
+import os
+import re
 from textwrap import dedent
 from typing import List, Tuple
+
+from dotenv import load_dotenv
 from langchain_community.document_loaders import UnstructuredRSTLoader
+from langchain_core.documents import Document
+from langchain_postgres import PGEngine, PGVectorStore
 from langchain_text_splitters import (
     Language,
     RecursiveCharacterTextSplitter,
 )
-from langchain_core.documents import Document
-from langchain_postgres import PGVectorStore
-from langchain_postgres import PGEngine
-from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from backend.workflow.utils.hf_space_wrapper import HFSpaceWrapper
 

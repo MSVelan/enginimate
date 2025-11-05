@@ -3,3 +3,8 @@
 *.egg-info/
 sys
 .python-version
+.ruff_cache/
+*.mp4
+*/__pycache__/
+*.pyc
+experimental/manim_test/media/

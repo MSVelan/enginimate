@@ -1,0 +1,52 @@
+import os
+
+from dotenv import load_dotenv
+from IPython.display import Image, display
+from langgraph.graph import END, START, StateGraph
+
+from backend.workflow.models.state import State
+from backend.workflow.nodes.coding_agent import coding_agent
+from backend.workflow.nodes.query_decomposer import query_decomposer
+from backend.workflow.nodes.reasoning_agent import reasoning_agent
+from backend.workflow.nodes.retriever import retriever
+
+load_dotenv()
+
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_KEY")
+os.environ["LANGSMITH_ENDPOINT"] = os.getenv(
+    "LANGSMITH_ENDPOINT", "https://api.smith.langchain.com"
+)
+os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_KEY")
+os.environ["LANGSMITH_TRACING"] = "true"
+os.environ["LANGSMITH_PROJECT"] = os.getenv("LANGSMITH_PROJECT", "Enginimate")
+
+
+def route_on_error(state: State):
+    if len(state["error_message"]) != 0:
+        return "END"
+    return "continue"
+
+
+# define nodes and edges
+workflow = StateGraph(State)
+
+workflow.add_node("reasoning_agent", reasoning_agent)
+workflow.add_node("query_decomposer", query_decomposer)
+workflow.add_node("retriever", retriever)
+workflow.add_node("coding_agent", coding_agent)
+
+workflow.add_edge(START, "reasoning_agent")
+workflow.add_conditional_edges(
+    "reasoning_agent", route_on_error, {"END": END, "continue": "query_decomposer"}
+)
+workflow.add_conditional_edges(
+    "query_decomposer", route_on_error, {"END": END, "continue": "retriever"}
+)
+workflow.add_conditional_edges(
+    "retriever", route_on_error, {"END": END, "continue": "coding_agent"}
+)
+workflow.add_edge("coding_agent", END)
+
+graph = workflow.compile()
+
+display(Image(graph.get_graph().draw_mermaid_png()))

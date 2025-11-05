@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "docker>=7.1.0",
     "docutils>=0.22.2",
     "jinja2>=3.1.6",
     "langchain>=1.0.2",
@@ -17,7 +18,6 @@ dependencies = [
     "pydantic>=2.12.3",
     "pypandoc>=1.15",
     "python-dotenv>=1.2.1",
-    "tiktoken>=0.12.0",
     "unstructured[rst]>=0.18.15",
 ]
 
@@ -26,9 +26,13 @@ dev = [
     "ipykernel>=7.1.0",
     "ipywidgets>=8.1.7",
     "nest-asyncio>=1.6.0",
+    "ruff>=0.14.3",
 ]
 
 [tool.setuptools.packages]
 # Tells setuptools to look for packages starting at the current directory (".")
 # and explicitly include the list of folders you care about.
 find = { include = ["backend*"] }
+
+[tool.ruff]
+lint.select = ["I"]

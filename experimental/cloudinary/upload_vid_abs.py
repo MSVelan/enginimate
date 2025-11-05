@@ -6,15 +6,14 @@ load_dotenv()
 
 # Import the Cloudinary libraries
 # ==============================
-import cloudinary
-from cloudinary import CloudinaryVideo
-import cloudinary.uploader
-import cloudinary.api
-
-
 # Import to format the JSON responses
 # ==============================
 import json
+
+import cloudinary
+import cloudinary.api
+import cloudinary.uploader
+from cloudinary import CloudinaryVideo
 
 # Set configuration parameter: return "https" URLs by setting secure=True
 # ==============================

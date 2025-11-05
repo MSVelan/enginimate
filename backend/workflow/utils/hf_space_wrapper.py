@@ -1,8 +1,9 @@
+import asyncio
 import os
 from time import sleep
-from dotenv import load_dotenv
-import asyncio
+
 import aiohttp
+from dotenv import load_dotenv
 from langchain.embeddings import Embeddings
 
 load_dotenv()

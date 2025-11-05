@@ -1,0 +1,102 @@
+import docker
+import os
+from typing import Optional
+
+import docker.errors
+
+
+class DockerSandbox:
+    def __init__(self):
+        self.client = docker.from_env()
+        self.container = None
+
+    def create_container(self):
+        try:
+            image, build_logs = self.client.images.build(
+                path=".",
+                tag="agent-sandbox",
+                rm=True,
+                forcerm=True,
+                buildargs={},
+                # decode=True
+            )
+        except docker.errors.BuildError as e:
+            print("Build error logs:")
+            for log in e.build_log:
+                if "stream" in log:
+                    print(log["stream"].strip())
+            raise
+
+        # Create container with security constraints and proper logging
+        self.container = self.client.containers.run(
+            "agent-sandbox",
+            command="tail -f /dev/null",  # Keep container running
+            detach=True,
+            tty=True,
+            # mem_limit="512m",
+            # cpu_quota=50000,
+            pids_limit=2,
+            security_opt=["no-new-privileges"],
+            # cap_drop=["ALL"],
+            # environment={"HF_TOKEN": os.getenv("HF_TOKEN")},
+        )
+
+    def run_code(self, code: str, cls_name: str = "Enginimate") -> Optional[str]:
+        """Runs manim code and returns error if found"""
+        if not self.container:
+            self.create_container()
+
+        try:
+            # Write to main.py file
+            self.container.exec_run(cmd=[code, ">", "main.py"], user="bot")
+            # Execute code in container
+            self.container.exec_run(
+                cmd=["manim", "-ql", "main.py", cls_name], user="bot"
+            )
+        except Exception as e:  # mostly raises docker.errors.ApiError
+            return str(e)
+
+        # Collect all output
+        # return exec_result.output.decode() if exec_result.output else None
+
+        return None
+
+    def cleanup(self):
+        if self.container:
+            try:
+                self.container.stop()
+            except docker.errors.NotFound:
+                # Container already removed, this is expected
+                pass
+            except Exception as e:
+                print(f"Error during cleanup: {e}")
+            finally:
+                self.container = None  # Clear the reference
+
+
+# Example usage:
+# sandbox = DockerSandbox()
+
+# try:
+#     # Define your agent code
+#     agent_code = """
+# import os
+# from smolagents import CodeAgent, InferenceClientModel
+
+# # Initialize the agent
+# agent = CodeAgent(
+#     model=InferenceClientModel(token=os.getenv("HF_TOKEN"), provider="together"),
+#     tools=[]
+# )
+
+# # Run the agent
+# response = agent.run("What's the 20th Fibonacci number?")
+# print(response)
+# """
+
+#     # Run the code in the sandbox
+#     output = sandbox.run_code(agent_code)
+#     print(output)
+
+# finally:
+#     sandbox.cleanup()

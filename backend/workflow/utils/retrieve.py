@@ -1,8 +1,8 @@
-async def retrieve_docs(user_query):
+async def retrieve_docs(user_query, k_code=3, k_doc=2, k_summary=2):
     query = _get_detailed_instruct(user_query)
-    code_docs = await _retrieve_docs(query, k=3, type="code")
-    docstrings = await _retrieve_docs(query, k=2, type="documentation")
-    summary_docs = await _retrieve_docs(query, k=2, type="summary")
+    code_docs = await _retrieve_docs(query, k=k_code, type="code")
+    docstrings = await _retrieve_docs(query, k=k_doc, type="documentation")
+    summary_docs = await _retrieve_docs(query, k=k_summary, type="summary")
     return code_docs + docstrings + summary_docs
 
 
@@ -15,8 +15,9 @@ Given a query, retrieve relevant documents that answer the query
 
 
 async def _get_pg_engine():
-    from dotenv import load_dotenv
     import os
+
+    from dotenv import load_dotenv
 
     load_dotenv()
 
@@ -41,9 +42,9 @@ async def _retrieve_docs(query, k=3, type="code"):
     Returns List[Tuple[Document: str, metadata: dict]]: list of Document objects
     with similarity score.
     """
+    from langchain_core.documents import Document
     from sqlalchemy import text
 
-    from langchain_core.documents import Document
     from backend.workflow.utils.hf_space_wrapper import HFSpaceWrapper
 
     hf_space = HFSpaceWrapper()
