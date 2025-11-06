@@ -6,6 +6,18 @@ async def retrieve_docs(user_query, k_code=3, k_doc=2, k_summary=2):
     return code_docs + docstrings + summary_docs
 
 
+def format_retrieved_docs(docs):
+    content = ""
+    for i, (doc, score) in enumerate(docs, 1):
+        content += "=" * 15 + f"Block {i}" + "=" * 15 + "\n"
+        content += f"Relevance Score: {score}\n\n"
+        content += doc.page_content + "\n"
+        content += "\nMetadata:\n"
+        for k, v in doc.metadata.items():
+            content += f"{k}: {v}\n"
+    return content
+
+
 def _get_detailed_instruct(query: str) -> str:
     """Instruct template for Qwen3-Embedding:0.6b embedding model"""
     task_description = """

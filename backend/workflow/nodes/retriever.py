@@ -1,18 +1,18 @@
 from backend.workflow.models.state import State
-from backend.workflow.utils.retrieve import retrieve_docs
+from backend.workflow.utils.retrieve import retrieve_docs, format_retrieved_docs
 
 
 async def retriever(state: State):
-    def format_retrieved_docs(docs):
-        content = ""
-        for i, (doc, score) in enumerate(docs, 1):
-            content += "=" * 30 + f"Block {i}" + "=" * 30 + "\n"
-            content += f"Relevance Score: {score}\n\n"
-            content += doc.page_content + "\n"
-            content += "\nMetadata:\n"
-            for k, v in doc.metadata.items():
-                content += f"{k}: {v}\n"
-        return content
-
-    docs = await retrieve_docs(state.query, k_summary=1)
-    return {"formatted_docs": format_retrieved_docs(docs)}
+    code_prompt = state["prompts"].code_prompt
+    documentation_prompt = state["prompts"].documentation_prompt
+    summary_prompt = state["prompts"].summary_prompt
+    code_docs = await retrieve_docs(code_prompt, k_doc=0, k_summary=0)
+    documentation_docs = await retrieve_docs(
+        documentation_prompt, k_code=0, k_summary=0
+    )
+    summary_docs = await retrieve_docs(summary_prompt, k_code=0, k_doc=0)
+    return {
+        "formatted_docs": format_retrieved_docs(
+            code_docs + documentation_docs + summary_docs
+        )
+    }

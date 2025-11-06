@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from IPython.display import Image, display
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from backend.workflow.models.state import State
@@ -47,6 +48,9 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("coding_agent", END)
 
+# checkpointer = InMemorySaver()
+# graph = workflow.compile(checkpointer=checkpointer)
+# Don't really need a checkpointer at this point
 graph = workflow.compile()
 
-display(Image(graph.get_graph().draw_mermaid_png()))
+# display(Image(graph.get_graph().draw_mermaid_png()))

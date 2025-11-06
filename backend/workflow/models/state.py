@@ -1,10 +1,13 @@
-from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from backend.workflow.nodes.query_decomposer import QueryDecomposerOutput
-from backend.workflow.nodes.reasoning_agent import VideoCreationStep
+from typing import Literal
+
+from backend.workflow.models.agent_schemas import (
+    VideoCreationStep,
+    QueryDecomposerOutput,
+)
 
 
 class State(BaseModel):

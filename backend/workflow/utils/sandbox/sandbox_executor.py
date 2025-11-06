@@ -12,21 +12,24 @@ class DockerSandbox:
 
     def create_container(self):
         try:
+            cur_dir = os.path.dirname(__file__)
             image, build_logs = self.client.images.build(
                 path=".",
                 tag="agent-sandbox",
                 rm=True,
                 forcerm=True,
                 buildargs={},
+                dockerfile=os.path.join(cur_dir, "Dockerfile"),
                 # decode=True
             )
         except docker.errors.BuildError as e:
-            print("Build error logs:")
+            print("Build error logs:", flush=True)
             for log in e.build_log:
                 if "stream" in log:
                     print(log["stream"].strip())
             raise
 
+        print("Build successful", flush=True)
         # Create container with security constraints and proper logging
         self.container = self.client.containers.run(
             "agent-sandbox",
@@ -40,6 +43,7 @@ class DockerSandbox:
             # cap_drop=["ALL"],
             # environment={"HF_TOKEN": os.getenv("HF_TOKEN")},
         )
+        print("Container created", flush=True)
 
     def run_code(self, code: str, cls_name: str = "Enginimate") -> Optional[str]:
         """Runs manim code and returns error if found"""
@@ -48,13 +52,20 @@ class DockerSandbox:
 
         try:
             # Write to main.py file
+            print("Copying code to main.py...", flush=True)
             self.container.exec_run(cmd=[code, ">", "main.py"], user="bot")
             # Execute code in container
+            print("Running manim -ql main.py Enginimate", flush=True)
             self.container.exec_run(
                 cmd=["manim", "-ql", "main.py", cls_name], user="bot"
             )
+            print("Successful execution of manim code", flush=True)
+        except docker.errors.APIError as e:
+            print("Error logs while running:", flush=True)
+            print(str(e), flush=True)
+            raise
         except Exception as e:  # mostly raises docker.errors.ApiError
-            return str(e)
+            raise
 
         # Collect all output
         # return exec_result.output.decode() if exec_result.output else None
@@ -69,7 +80,7 @@ class DockerSandbox:
                 # Container already removed, this is expected
                 pass
             except Exception as e:
-                print(f"Error during cleanup: {e}")
+                print(f"Error during cleanup: {e}", flush=True)
             finally:
                 self.container = None  # Clear the reference
 

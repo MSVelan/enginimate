@@ -2,16 +2,8 @@ from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
+from backend.workflow.models.agent_schemas import VideoCreationStep
 from backend.workflow.models.state import State
-
-
-class VideoCreationStep(BaseModel):
-    step_id: int = Field(
-        default=0,
-        description="nth step in the sequential \
-        order for scene creation",
-    )
-    description: str = Field(default="", description="Description of the current step")
 
 
 class ReasoningAgentOutput(BaseModel):
@@ -48,5 +40,5 @@ def reasoning_agent(state: State):
 
     planner = llm.with_structured_output(ReasoningAgentOutput)
     pipeline = prompt_template | planner
-    scene_generation_steps = pipeline.invoke({"scene_description": state.prompt})
+    scene_generation_steps = pipeline.invoke({"scene_description": state["prompt"]})
     return {"steps": scene_generation_steps.steps}
