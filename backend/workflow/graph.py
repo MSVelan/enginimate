@@ -10,6 +10,7 @@ from backend.workflow.nodes.coding_agent import coding_agent
 from backend.workflow.nodes.query_decomposer import query_decomposer
 from backend.workflow.nodes.reasoning_agent import reasoning_agent
 from backend.workflow.nodes.retriever import retriever
+from backend.workflow.nodes.evaluator import evaluator_agent
 
 load_dotenv()
 
@@ -23,9 +24,15 @@ os.environ["LANGSMITH_PROJECT"] = os.getenv("LANGSMITH_PROJECT", "Enginimate")
 
 
 def route_on_error(state: State):
-    if len(state["error_message"]) != 0:
+    if len(state.error_message) != 0:
         return "END"
     return "continue"
+
+
+def evaluator_agent_route(state: State):
+    if len(state.error_message) != 0:
+        return "END"
+    return state.evaluator_next_step
 
 
 # define nodes and edges
@@ -35,6 +42,7 @@ workflow.add_node("reasoning_agent", reasoning_agent)
 workflow.add_node("query_decomposer", query_decomposer)
 workflow.add_node("retriever", retriever)
 workflow.add_node("coding_agent", coding_agent)
+workflow.add_node("evaluator_agent", evaluator_agent)
 
 workflow.add_edge(START, "reasoning_agent")
 workflow.add_conditional_edges(
@@ -46,11 +54,23 @@ workflow.add_conditional_edges(
 workflow.add_conditional_edges(
     "retriever", route_on_error, {"END": END, "continue": "coding_agent"}
 )
-workflow.add_edge("coding_agent", END)
+workflow.add_conditional_edges(
+    "coding_agent", route_on_error, {"END": END, "continue": "evaluator_agent"}
+)
+workflow.add_conditional_edges(
+    "evaluator_agent",
+    evaluator_agent_route,
+    {
+        "END": END,
+        "retry": "coding_agent",
+        "next_step": "query_decomposer",
+        "continue": END,
+    },
+)
 
 # checkpointer = InMemorySaver()
 # graph = workflow.compile(checkpointer=checkpointer)
 # Don't really need a checkpointer at this point
 graph = workflow.compile()
 
-# display(Image(graph.get_graph().draw_mermaid_png()))
+display(Image(graph.get_graph().draw_mermaid_png()))

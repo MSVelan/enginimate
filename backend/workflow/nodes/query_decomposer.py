@@ -13,6 +13,8 @@ def query_decomposer(state: State):
     better understand the query and fetch relevant documents for different types.
     """
 
+    # This should set state["current_step_description"] as well
+    query = state.steps[state.completed_steps].description
     prompt_template = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -22,5 +24,7 @@ def query_decomposer(state: State):
 
     query_decomposer_llm = llm.with_structured_output(QueryDecomposerOutput)
     pipeline = prompt_template | query_decomposer_llm
-    prompts = pipeline.invoke({"query": state["query"]})
-    return {"prompts": prompts}
+    prompts = pipeline.invoke({"query": query})
+    print("Query Decomposer:")
+    print(query)
+    return {"prompts": prompts, "current_step_description": query}

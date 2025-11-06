@@ -26,7 +26,7 @@ class State(BaseModel):
     # Write after code generation of each major step
     completed_steps: int = Field(default=0, description="Total completed steps")
     prompts: QueryDecomposerOutput = Field(
-        default_factory=dict,
+        default_factory=QueryDecomposerOutput,
         description="\
         List of prompts for retrieval of relevant documents in the RAG pipeline",
     )
@@ -41,15 +41,13 @@ class State(BaseModel):
         until the current step",
     )
     error: str = Field(default="", description="Error generated on code execution")
-    feedback: list[str] = Field(
-        default_factory=list,
-        description="List of \
-        constructive feedback for improving the current code",
+    feedback: str = Field(
+        default="",
+        description="Constructive feedback for improving the current code",
     )
-    done_code_generation: Literal["yes", "no"] = Field(
-        default="no",
-        description="\
-        Code generation for all steps is done or not",
+    evaluator_next_step: Literal["retry", "next_step", "continue"] = Field(
+        default="next_step",
+        description="Whether to retry current step or continue",
     )
     url: str = Field(
         default="",

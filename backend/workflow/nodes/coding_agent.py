@@ -61,12 +61,12 @@ def code_execution_middleware(state: AgentState, runtime: Runtime):
         sandbox.run_code(pycode)
     except Exception as e:
         print("Received error from server")
-        err = str(e)
+        err = "Error: " + str(e) + "\nPlease retry again."
         print(err)
     print("No errors from server")
     if err is not None:
         return {"messages": [HumanMessage(err)]}
-    return {"messages": [HumanMessage("Code execution successful: No errors")]}
+    return {"messages": [HumanMessage("code execution successful")]}
 
 
 def coding_agent(state: State):
@@ -75,11 +75,20 @@ def coding_agent(state: State):
 You are a expert Python developer specialized in Manim-CE library. Your sole function \
 write python code using Manim-CE library for a given scene generation query. You must \
 use a single class for scene generation and the class must be named Enginimate, this \
-class inherits the Scene base class. Do not use self.wait() at the end of construct \
-method of the Enginimate class.
+class inherits the Scene base class.
 The complete, runnable Python code as a single string. \
 MUST NOT include any surrounding text, explanations, or conversational filler.
+
+Task:
+1. Add code only for the current phase to the existing code
+2. Check your code for common issues:
+   - Are all objects added to scene before animating?
+   - Are coordinates within bounds (-7 to 7, -4 to 4)?
+   - Are animations in logical order?
+   - Are run_times reasonable (0.5-3 seconds)?
+   - Do transforms make sense?
     """
+    print("Coding Agent:")
     agent = create_agent(
         model,
         system_prompt=system_prompt,
@@ -105,7 +114,8 @@ MUST NOT include any surrounding text, explanations, or conversational filler.
     )
 
     query = """
-Query: {current_step_description}
+Scene description: {scene_description}
+Current Phase: {current_step_description}
 Code generated so far:
 {code_generated}
 Context from manim-ce documentation:
@@ -119,13 +129,17 @@ Feedback:
     pipeline = template | agent
     result = pipeline.invoke(
         {
-            "current_step_description": state["current_step_description"],
-            "code_generated": state["code_generated"],
-            "formatted_docs": state["formatted_docs"],
-            "feedback": state["feedback"],
+            "scene_description": state.query,
+            "current_step_description": state.current_step_description,
+            "code_generated": state.code_generated,
+            "formatted_docs": state.formatted_docs,
+            "feedback": state.feedback,
         },
         config={"configurable": {"thread_id": "testing"}},
     )
 
     # return {"code_generated": result.code}
+    if result["messages"][-1].content != "code execution successful":
+        return {"error_message": result["messages"][-1].content}
+    print("Generated code for current step")
     return {"code_generated": result["messages"][-2].content}

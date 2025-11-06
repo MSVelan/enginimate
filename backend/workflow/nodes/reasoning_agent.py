@@ -40,5 +40,7 @@ def reasoning_agent(state: State):
 
     planner = llm.with_structured_output(ReasoningAgentOutput)
     pipeline = prompt_template | planner
-    scene_generation_steps = pipeline.invoke({"scene_description": state["prompt"]})
+    scene_generation_steps = pipeline.invoke({"scene_description": state.query})
+    print("Reasoning Agent: ")
+    print(scene_generation_steps.steps)
     return {"steps": scene_generation_steps.steps}
