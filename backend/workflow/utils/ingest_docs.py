@@ -15,13 +15,13 @@ from langchain_text_splitters import (
 )
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from backend.workflow.utils.hf_space_wrapper import HFSpaceWrapper
+from backend.workflow.utils.HFSpace.hf_space_wrapper import CustomEmbedding
 
 load_dotenv()
 
 MANIM_DIR = os.getenv("MANIM_DIR")
 
-hf_space = HFSpaceWrapper()  # my wrapper which provides Embeddings
+embed_service = CustomEmbedding()  # my wrapper which provides Embeddings
 
 MAX_TOKENS = 1000  # max tokens for documentation
 MAX_TOKENS_PY = 2000  # max tokens in py files
@@ -62,7 +62,7 @@ async def _get_vector_store():
         engine=pg_engine,
         table_name=TABLE_NAME,
         # schema_name=SCHEMA_NAME,
-        embedding_service=hf_space,
+        embedding_service=embed_service,
     )
     return store
 

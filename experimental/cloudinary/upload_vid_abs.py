@@ -11,8 +11,6 @@ load_dotenv()
 import json
 
 import cloudinary
-import cloudinary.api
-import cloudinary.uploader
 from cloudinary import CloudinaryVideo
 
 # Set configuration parameter: return "https" URLs by setting secure=True

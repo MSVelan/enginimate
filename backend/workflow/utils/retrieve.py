@@ -57,13 +57,13 @@ async def _retrieve_docs(query, k=3, type="code"):
     from langchain_core.documents import Document
     from sqlalchemy import text
 
-    from backend.workflow.utils.hf_space_wrapper import HFSpaceWrapper
+    from backend.workflow.utils.HFSpace.hf_space_wrapper import CustomEmbedding
 
-    hf_space = HFSpaceWrapper()
+    embed_service = CustomEmbedding()
 
     pg_engine = await _get_pg_engine()
 
-    query_embedding = hf_space.embed_query(query)
+    query_embedding = embed_service.embed_query(query)
     embedding_str = f"[{','.join(map(str, query_embedding))}]"
 
     sql_query = """

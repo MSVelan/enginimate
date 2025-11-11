@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from typing import Literal
 
 from backend.workflow.models.state import State
+from backend.workflow.utils.HFSpace.hf_space_wrapper import ManimExecutor
 
 
 class EvaluatorAgentOutput(BaseModel):
@@ -14,12 +15,27 @@ class EvaluatorAgentOutput(BaseModel):
     feedback: str = Field(
         default="",
         description="Effective feedback to improve the code for current phase \
-            only if evaluation is retry, leave empty otherwise",
+only if evaluation is retry, leave empty otherwise",
     )
 
 
-def evaluator_agent(state: State):
-    llm = init_chat_model("groq:openai/gpt-oss-20b", temperature=0.7)
+async def evaluator_agent(state: State):
+    # check for syntax error first
+    executor = ManimExecutor(uuid=state.uuid)
+    err = ""
+    try:
+        err = executor.test_code(state.code_generated)
+    except Exception as e:
+        return {"error_message": str(e)}
+
+    if err:
+        return {
+            "error": err,
+            "evaluator_next_step": "retry",
+            "feedback": "Rectify the syntax error",
+        }
+
+    llm = init_chat_model("groq:openai/gpt-oss-20b")
 
     system_prompt = """You are a senior Python QA developer \
 specializing in the Manim animation library.  
@@ -32,9 +48,9 @@ Task:
 - Are all objects added to scene before animating?
 - Are coordinates within bounds (-7 to 7, -4 to 4)?
 - Are animations in logical order?
-- Are run_times reasonable (0.5-3 seconds)?
 - Do transforms make sense?
-    """
+- Is the length of animation sound enough for the given task
+"""
 
     query = """
 Scene description: {scene_description}
@@ -54,14 +70,20 @@ Context from manim-ce documentation:
     print("Evaluator:")
     evaluator = llm.with_structured_output(EvaluatorAgentOutput)
     pipeline = prompt_template | evaluator
-    result = pipeline.invoke(
-        {
-            "scene_description": state.query,
-            "current_step_description": state.current_step_description,
-            "code_generated": state.code_generated,
-            "formatted_docs": state.formatted_docs,
-        }
-    )
+    err = None
+    try:
+        result = await pipeline.ainvoke(
+            {
+                "scene_description": state.query,
+                "current_step_description": state.current_step_description,
+                "code_generated": state.code_generated,
+                "formatted_docs": state.formatted_docs,
+            }
+        )
+    except Exception as e:
+        err = repr(e)
+    if err is not None:
+        return {"error_message": err}
     if result.evaluation == "retry":
         print("Retry")
         print("Feedback", result.feedback)

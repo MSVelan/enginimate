@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from typing import Literal
 
-from backend.workflow.models.agent_schemas import (
+from backend.workflow.models.state_agent_schemas import (
     VideoCreationStep,
     QueryDecomposerOutput,
 )

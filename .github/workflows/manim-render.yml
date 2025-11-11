@@ -1,0 +1,135 @@
+name: Render Manim animation and upload to cloudinary
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "Manim code to execute"
+        required: true
+        type: string
+      quality:
+        description: "Video quality (low, medium, high)"
+        required: false
+        type: string
+        default: "medium"
+
+  repository_dispatch:
+    types: [render-manim]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    outputs:
+      video_url: ${{ steps.upload.outputs.url }}
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            ffmpeg \
+            texlive \
+            texlive-latex-extra
+
+      - name: Install Manim
+        run: |
+          pip install manim cloudinary
+
+      - name: Create Manim script
+        run: |
+          cat > scene.py << 'EOFSCRIPT'
+          ${{ github.event.inputs.code || github.event.client_payload.code }}
+          EOFSCRIPT
+
+      - name: Render animation
+        id: render
+        run: |
+          SCENE_NAME="${{ github.event.inputs.scene_name || github.event.client_payload.scene_name || 'Enginimate' }}"
+          QUALITY="${{ github.event.inputs.quality || github.event.client_payload.quality || 'medium' }}"
+
+          case $QUALITY in
+            low)
+              QUALITY_FLAG="-ql"
+              ;;
+            high)
+              QUALITY_FLAG="-qh"
+              ;;
+            *)
+              QUALITY_FLAG="-qm"
+              ;;
+          esac
+
+          manim scene.py $SCENE_NAME $QUALITY_FLAG
+
+          # Find the generated video
+          VIDEO_FILE=$(find media/videos -name "*.mp4" | head -n 1)
+          echo "video_file=$VIDEO_FILE" >> $GITHUB_OUTPUT
+          echo "Generated video: $VIDEO_FILE"
+
+      - name: Upload to Cloudinary
+        id: upload
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        run: |
+          python << 'EOFPYTHON'
+          import os
+          import cloudinary
+          import cloudinary.uploader
+
+          # Configure Cloudinary
+          cloudinary.config(
+              cloud_name=os.environ['CLOUDINARY_CLOUD_NAME'],
+              api_key=os.environ['CLOUDINARY_API_KEY'],
+              api_secret=os.environ['CLOUDINARY_API_SECRET'],
+              secure=True
+          )
+
+          video_file = "${{ steps.render.outputs.video_file }}"
+
+          try:
+              print(f"Uploading video: {video_file}")
+              
+              if not os.path.exists(video_file):
+                  raise Exception(f"Video file not found: {video_file}")
+              
+              result = cloudinary.uploader.upload_large(
+                  video_file,
+                  resource_type="video",
+                  folder="manim-renders",
+                  use_filename=True,
+                  unique_filename=True
+              )
+              
+              video_url = result['secure_url']
+              
+              print(f"Video uploaded successfully!")
+              print(f"URL: {video_url}")
+              print(f"Public ID: {result.get('public_id')}")
+              
+              # Save to GitHub output
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write(f"url={video_url}\n")
+                  f.write(f"public_id={result.get('public_id')}\n")
+                  
+          except Exception as e:
+              print(f"Error uploading video: {repr(e)}")
+              raise
+          EOFPYTHON
+
+      - name: Comment result (if triggered from issue)
+        if: github.event_name == 'repository_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const videoUrl = '${{ steps.upload.outputs.url }}';
+            console.log('Video URL:', videoUrl);
