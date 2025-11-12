@@ -48,7 +48,7 @@ async def _get_vector_store():
     POSTGRES_HOST = os.getenv("POSTGRES_HOST")
     POSTGRES_DB = os.getenv("POSTGRES_DB")
     POSTGRES_PORT = os.getenv("POSTGRES_PORT")
-    TABLE_NAME = os.getenv("TABLE_NAME")
+    EMBEDDINGS_TABLE = os.getenv("EMBEDDINGS_TABLE")
 
     CONNECTION_STRING = (
         f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_HOST}"
@@ -60,7 +60,7 @@ async def _get_vector_store():
     # NOTE: can provide k value here
     store = await PGVectorStore.create(
         engine=pg_engine,
-        table_name=TABLE_NAME,
+        table_name=EMBEDDINGS_TABLE,
         # schema_name=SCHEMA_NAME,
         embedding_service=embed_service,
     )

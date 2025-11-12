@@ -6,5 +6,6 @@ sys
 .ruff_cache/
 *.mp4
 */__pycache__/
+*/__pycache__/*.pyc
 *.pyc
 experimental/manim_test/media/
