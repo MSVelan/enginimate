@@ -11,14 +11,7 @@ from enum import Enum
 import asyncio
 from datetime import datetime
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-origins = [
-    "http://localhost:8000",
-    "https://api.github.com",
-]
+origins = ["https://api.github.com"]
 
 app = FastAPI()
 app.add_middleware(
@@ -113,8 +106,6 @@ async def trigger_rendering(request: ManimRenderRequest):
             headers=headers,
             json=payload,
         )
-        print(f"\nStatus: {response.status_code}")
-        print(f"Response: {response.text}")
 
         if response.status_code == 204:
             jobs[request.uuid]["status"] = JobStatus.PROCESSING
@@ -214,18 +205,13 @@ async def render_complete_webhook(request: Request):
     Internal webhook endpoint that GitHub Actions calls when rendering is complete
     """
     body = await request.body()
-    print(f"\n=== DEBUG WEBHOOK RECEIVED ===")
-    print(f"Headers: {dict(request.headers)}")
-    print(f"Body: {body.decode()}")
     # Verify webhook signature
     signature = request.headers.get("X-Hub-Signature-256")
-    print(signature)
     if signature:
         expected_signature = (
             "sha256="
             + hmac.new(WEBHOOK_SECRET.encode("utf-8"), body, hashlib.sha256).hexdigest()
         )
-        print(expected_signature)
 
         if not hmac.compare_digest(signature, expected_signature):
             raise HTTPException(status_code=403, detail="Invalid signature")
@@ -235,7 +221,6 @@ async def render_complete_webhook(request: Request):
     uuid = payload.get("uuid")
 
     if not uuid or uuid not in jobs:
-        print(f"Warning: Received webhook for unknown UUID: {uuid}")
         return {"success": False, "message": "Unknown UUID"}
 
     # Update job status
@@ -287,9 +272,3 @@ async def root():
             "GET /jobs": "List all jobs",
         },
     }
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

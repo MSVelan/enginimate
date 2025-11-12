@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from typing import Literal
+from typing import Literal, Optional
 
 from backend.workflow.models.state_agent_schemas import (
     VideoCreationStep,
@@ -54,12 +54,16 @@ class State(BaseModel):
         description="Final video url after \
         uploading to cloudinary",
     )
+    public_id: Optional[str] = Field(
+        default="",
+        description="Public-id of video uploaded in cloudinary",
+    )
     success: bool = Field(
         default=True,
         description="Indicates if the pipeline has \
         completed successfully",
     )
-    error_message: str = Field(
+    error_message: Optional[str] = Field(
         default="",
         description="Error message if the \
         pipeline failed",

@@ -12,6 +12,7 @@ from backend.workflow.nodes.query_decomposer import query_decomposer
 from backend.workflow.nodes.reasoning_agent import reasoning_agent
 from backend.workflow.nodes.retriever import retriever
 from backend.workflow.nodes.evaluator import evaluator_agent
+from backend.workflow.nodes.render_and_upload import render_and_upload
 
 load_dotenv()
 
@@ -46,6 +47,7 @@ workflow.add_node("query_decomposer", query_decomposer)
 workflow.add_node("retriever", retriever)
 workflow.add_node("coding_agent", coding_agent)
 workflow.add_node("evaluator_agent", evaluator_agent)
+workflow.add_node("render_and_upload", render_and_upload)
 
 workflow.add_edge(START, "reasoning_agent")
 workflow.add_conditional_edges(
@@ -69,8 +71,13 @@ workflow.add_conditional_edges(
         "END": END,
         "retry": "coding_agent",
         "next_step": "query_decomposer",
-        "continue": END,
+        "continue": "render_and_upload",
     },
+)
+workflow.add_conditional_edges(
+    "render_and_upload",
+    route_on_error,
+    {"END": END, "continue": END},
 )
 
 # checkpointer = InMemorySaver()
