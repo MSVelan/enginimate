@@ -30,16 +30,6 @@ def route_on_error(state: State) -> Literal["END", "continue"]:
     return "continue"
 
 
-def coding_agent_route(
-    state: State,
-) -> Literal["END"] | Literal["coding_agent", "evaluator_agent"]:
-    if len(state.error_message) != 0:
-        return "END"
-    if len(state.error) != 0:
-        return "coding_agent"
-    return "evaluator_agent"
-
-
 def evaluator_agent_route(
     state: State,
 ) -> Literal["END"] | Literal["retry", "next_step", "continue"]:
@@ -69,8 +59,8 @@ workflow.add_conditional_edges(
 )
 workflow.add_conditional_edges(
     "coding_agent",
-    coding_agent_route,
-    {"END": END, "coding_agent": "coding_agent", "evaluator_agent": "evaluator_agent"},
+    route_on_error,
+    {"END": END, "continue": "evaluator_agent"},
 )
 workflow.add_conditional_edges(
     "evaluator_agent",

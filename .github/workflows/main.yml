@@ -1,26 +1,13 @@
 name: Render Manim animation and upload to cloudinary
 
 on:
-  workflow_dispatch:
-    inputs:
-      code:
-        description: "Manim code to execute"
-        required: true
-        type: string
-      quality:
-        description: "Video quality (low, medium, high)"
-        required: false
-        type: string
-        default: "medium"
-
   repository_dispatch:
     types: [render-manim]
 
 jobs:
   render:
     runs-on: ubuntu-latest
-    outputs:
-      video_url: ${{ steps.upload.outputs.url }}
+    environment: Render-Manim-Videos
 
     steps:
       - name: Set up Python
@@ -41,19 +28,21 @@ jobs:
 
       - name: Install Manim
         run: |
-          pip install manim cloudinary
+          pip install manim cloudinary httpx numpy
 
       - name: Create Manim script
         run: |
           cat > scene.py << 'EOFSCRIPT'
-          ${{ github.event.inputs.code || github.event.client_payload.code }}
+          from manim import *
+
+          ${{ github.event.client_payload.code }}
           EOFSCRIPT
 
       - name: Render animation
         id: render
         run: |
-          SCENE_NAME="${{ github.event.inputs.scene_name || github.event.client_payload.scene_name || 'Enginimate' }}"
-          QUALITY="${{ github.event.inputs.quality || github.event.client_payload.quality || 'medium' }}"
+          SCENE_NAME="${{ github.event.client_payload.scene_name || 'Enginimate' }}"
+          QUALITY="${{ github.event.client_payload.quality || 'high' }}"
 
           case $QUALITY in
             low)
@@ -126,10 +115,63 @@ jobs:
               raise
           EOFPYTHON
 
-      - name: Comment result (if triggered from issue)
+      - name: Send webhook with results
         if: github.event_name == 'repository_dispatch'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const videoUrl = '${{ steps.upload.outputs.url }}';
-            console.log('Video URL:', videoUrl);
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          python << 'EOFPYTHON'
+          import os
+          import json
+          import httpx
+          import hmac
+          import hashlib
+
+          video_url = "${{ steps.upload.outputs.url }}"
+          public_id = "${{ steps.upload.outputs.public_id }}"
+          uuid = "${{ github.event.client_payload.uuid }}"
+          webhook_url = os.getenv("WEBHOOK_URL")
+          webhook_secret = os.getenv("WEBHOOK_SECRET", "")
+
+          if not webhook_url:
+              print("No webhook URL configured. Skipping webhook.")
+              exit(0)
+
+          payload = {
+              "uuid": uuid,
+              "video_url": video_url,
+              "public_id": public_id,
+              "status": "completed",
+              "run_id": "${{ github.run_id }}"
+          }
+
+          print(f"Sending webhook to: {webhook_url}")
+          print(f"Payload: {json.dumps(payload, indent=2)}")
+
+          # Create signature
+          payload_json = json.dumps(payload, separators=(',', ':'), sort_keys=True)
+          payload_bytes = payload_json.encode('utf-8')
+          signature = "sha256=" + hmac.new(
+              webhook_secret.encode(),
+              payload_bytes,
+              hashlib.sha256
+          ).hexdigest()
+
+          try:
+              client = httpx.Client(timeout=30.0)
+              response = client.post(
+                  webhook_url,
+                  content=payload_bytes,
+                  headers={
+                      "Content-Type": "application/json",
+                      "X-Hub-Signature-256": signature
+                  }
+              )
+              print(f"Webhook response status: {response.status_code}")
+              print(f"Webhook response: {response.text}")
+          except Exception as e:
+              print(f"Error sending webhook: {repr(e)}")
+              # Don't fail the workflow if webhook fails
+          EOFPYTHON
