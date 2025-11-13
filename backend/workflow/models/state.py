@@ -58,6 +58,14 @@ class State(BaseModel):
         default="",
         description="Public-id of video uploaded in cloudinary",
     )
+    created_at: str = Field(
+        default="",
+        description="Time at which video rendering job was submitted",
+    )
+    completed_at: Optional[str] = Field(
+        default="",
+        description="Time at which video rendering job was completed",
+    )
     success: bool = Field(
         default=True,
         description="Indicates if the pipeline has \

@@ -29,9 +29,12 @@ async def render_and_upload(state: State):
     if result.get("video_url") is None:
         return {"error_message": result.get("error")}
 
-    video_url = result["video_url"]
-    public_id = result["public_id"]
-    return {"url": video_url, "public_id": public_id}
+    return {
+        "url": result["video_url"],
+        "public_id": result["public_id"],
+        "created_at": result["created_at"],
+        "completed_at": result.get("completed_at"),
+    }
 
 
 async def _make_async_post_request(url, headers, payload, max_retries=3):

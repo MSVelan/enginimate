@@ -34,14 +34,16 @@ async def sql_uploader(state: State):
                         query VARCHAR(1000) NOT NULL,
                         code_generated VARCHAR(2000) NOT NULL,
                         url VARCHAR(200),
-                        public_id VARCHAR(60)
+                        public_id VARCHAR(60),
+                        created_at TIMESTAMPTZ,
+                        completed_at TIMESTAMPTZ,
                     );
                 """
                 cur.execute(create_table_query, RENDER_TABLE)
-                # TODO: return created_at from render_and_upload service and add to state
                 insert_query = f"""
-                    INSERT INTO %s (uuid, query, code_generated, url, public_id)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO %s (uuid, query, code_generated, url,
+                    public_id, created_at, completed_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """
                 cur.execute(
                     insert_query,
@@ -51,6 +53,8 @@ async def sql_uploader(state: State):
                         state.code_generated,
                         state.url,
                         state.public_id,
+                        state.created_at,
+                        state.completed_at,
                     ),
                 )
     except Exception as e:

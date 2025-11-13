@@ -13,6 +13,7 @@ from backend.workflow.nodes.reasoning_agent import reasoning_agent
 from backend.workflow.nodes.retriever import retriever
 from backend.workflow.nodes.evaluator import evaluator_agent
 from backend.workflow.nodes.render_and_upload import render_and_upload
+from backend.workflow.nodes.sql_uploader import sql_uploader
 
 load_dotenv()
 
@@ -48,6 +49,7 @@ workflow.add_node("retriever", retriever)
 workflow.add_node("coding_agent", coding_agent)
 workflow.add_node("evaluator_agent", evaluator_agent)
 workflow.add_node("render_and_upload", render_and_upload)
+workflow.add_node("sql_uploader", sql_uploader)
 
 workflow.add_edge(START, "reasoning_agent")
 workflow.add_conditional_edges(
@@ -76,6 +78,11 @@ workflow.add_conditional_edges(
 )
 workflow.add_conditional_edges(
     "render_and_upload",
+    route_on_error,
+    {"END": END, "continue": "sql_uploader"},
+)
+workflow.add_conditional_edges(
+    "sql_uploader",
     route_on_error,
     {"END": END, "continue": END},
 )

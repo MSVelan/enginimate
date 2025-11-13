@@ -26,7 +26,8 @@ GITHUB_REPO_OWNER = os.getenv("GITHUB_REPO_OWNER", "MSVelan")
 GITHUB_REPO_NAME = os.getenv("GITHUB_REPO_NAME", "enginimate")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "your-secret-key")
 
-# In-memory storage (use Redis/database in production)
+# In-memory storage (can use Redis/database)
+# In-memory storage seems to be enough for this use-case
 jobs: Dict[str, dict] = {}
 
 
@@ -65,6 +66,7 @@ async def trigger_rendering(request: ManimRenderRequest):
             "success": False,
             "message": f"Job with UUID {request.uuid} already exists",
             "status": jobs[request.uuid]["status"],
+            "created_at": jobs[request.uuid]["created_at"],
         }
 
     # Create job entry
@@ -114,11 +116,15 @@ async def trigger_rendering(request: ManimRenderRequest):
                 "uuid": request.uuid,
                 "message": "Rendering job submitted successfully",
                 "status": JobStatus.PROCESSING,
+                "created_at": jobs[request.uuid]["created_at"],
                 "note": "Use GET /render-status/{uuid} to check status and get video URL",
             }
         else:
             jobs[request.uuid]["status"] = JobStatus.FAILED
             jobs[request.uuid]["error"] = f"GitHub API error: {response.text}"
+            jobs[request.uuid]["completed_at"] = datetime.now(
+                ZoneInfo("Asia/Kolkata")
+            ).isoformat()
             raise HTTPException(
                 status_code=response.status_code,
                 detail=f"Failed to trigger workflow: {response.text}",
@@ -168,9 +174,17 @@ async def get_render_result(uuid: str, wait: bool = False, timeout: int = 300):
                     "uuid": uuid,
                     "video_url": job["video_url"],
                     "public_id": job["public_id"],
+                    "created_at": job["created_at"],
+                    "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
                 }
             elif job["status"] == JobStatus.FAILED:
-                return {"success": False, "uuid": uuid, "error": job["error"]}
+                return {
+                    "success": False,
+                    "uuid": uuid,
+                    "error": job["error"],
+                    "created_at": job["created_at"],
+                    "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+                }
 
             await asyncio.sleep(poll_interval)
             elapsed += poll_interval
@@ -187,15 +201,24 @@ async def get_render_result(uuid: str, wait: bool = False, timeout: int = 300):
             "uuid": uuid,
             "video_url": job["video_url"],
             "public_id": job["public_id"],
+            "created_at": job["created_at"],
+            "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
         }
     elif job["status"] == JobStatus.FAILED:
-        return {"success": False, "uuid": uuid, "error": job["error"]}
+        return {
+            "success": False,
+            "uuid": uuid,
+            "error": job["error"],
+            "created_at": job["created_at"],
+            "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+        }
     else:
         return {
             "success": False,
             "uuid": uuid,
             "status": job["status"],
             "message": "Job is still processing",
+            "created_at": job["created_at"],
         }
 
 
@@ -235,7 +258,7 @@ async def render_complete_webhook(request: Request):
     else:
         job["status"] = JobStatus.FAILED
         job["error"] = payload.get("error", "Unknown error")
-        job["completed_at"] = datetime.utcnow().isoformat()
+        job["completed_at"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
         print(f"Job {uuid} failed. Error: {job['error']}")
 
     return {"success": True, "message": "Webhook processed", "uuid": uuid}
