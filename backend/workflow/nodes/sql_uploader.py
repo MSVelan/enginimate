@@ -13,15 +13,13 @@ def _get_connection_string():
     POSTGRES_DB = os.getenv("POSTGRES_DB")
     POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 
-    conn_string = (
-        f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_HOST}"
-        f":{POSTGRES_PORT}/{POSTGRES_DB}"
-    )
+    conn_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_HOST}/{POSTGRES_DB}"
     return conn_string
 
 
 async def sql_uploader(state: State):
     conn_string = _get_connection_string()
+    print("SQL Uploader:")
     try:
         with psycopg.connect(conn_string) as conn:
             RENDER_TABLE = os.getenv("RENDER_TABLE")
@@ -29,21 +27,22 @@ async def sql_uploader(state: State):
                 # create table
                 # client_uuid, query, code_generated, url, public_id
                 create_table_query = f"""
-                    CREATE TABLE IF NOT EXISTS %s(
+                    CREATE TABLE IF NOT EXISTS {RENDER_TABLE}(
                         uuid UUID PRIMARY KEY,
                         query VARCHAR(1000) NOT NULL,
                         code_generated VARCHAR(2000) NOT NULL,
                         url VARCHAR(200),
                         public_id VARCHAR(60),
                         created_at TIMESTAMPTZ,
-                        completed_at TIMESTAMPTZ,
+                        completed_at TIMESTAMPTZ
                     );
                 """
-                cur.execute(create_table_query, RENDER_TABLE)
+                cur.execute(create_table_query)
+                print("Created table")
                 insert_query = f"""
-                    INSERT INTO %s (uuid, query, code_generated, url,
+                    INSERT INTO {RENDER_TABLE} (uuid, query, code_generated, url,
                     public_id, created_at, completed_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s);
                 """
                 cur.execute(
                     insert_query,
@@ -57,5 +56,7 @@ async def sql_uploader(state: State):
                         state.completed_at,
                     ),
                 )
+                print("Inserted record")
     except Exception as e:
+        print(e)
         return {"error_message": str(e)}

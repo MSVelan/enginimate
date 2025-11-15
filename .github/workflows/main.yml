@@ -20,11 +20,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
+            python3-dev \
             libcairo2-dev \
             libpango1.0-dev \
+            dvisvgm \
             ffmpeg \
-            texlive \
-            texlive-latex-extra
+            texlive-full \
 
       - name: Install Manim
         run: |

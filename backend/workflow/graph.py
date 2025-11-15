@@ -18,6 +18,7 @@ from backend.workflow.nodes.sql_uploader import sql_uploader
 load_dotenv()
 
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_KEY")
+os.environ["CEREBRAS_API_KEY"] = os.getenv("CEREBRAS_KEY")
 os.environ["LANGSMITH_ENDPOINT"] = os.getenv(
     "LANGSMITH_ENDPOINT", "https://api.smith.langchain.com"
 )
@@ -45,7 +46,7 @@ workflow = StateGraph(State)
 
 workflow.add_node("reasoning_agent", reasoning_agent)
 workflow.add_node("query_decomposer", query_decomposer)
-workflow.add_node("retriever", retriever)
+# workflow.add_node("retriever", retriever)
 workflow.add_node("coding_agent", coding_agent)
 workflow.add_node("evaluator_agent", evaluator_agent)
 workflow.add_node("render_and_upload", render_and_upload)
@@ -56,11 +57,14 @@ workflow.add_conditional_edges(
     "reasoning_agent", route_on_error, {"END": END, "continue": "query_decomposer"}
 )
 workflow.add_conditional_edges(
-    "query_decomposer", route_on_error, {"END": END, "continue": "retriever"}
+    "query_decomposer", route_on_error, {"END": END, "continue": "coding_agent"}
 )
-workflow.add_conditional_edges(
-    "retriever", route_on_error, {"END": END, "continue": "coding_agent"}
-)
+# workflow.add_conditional_edges(
+#     "query_decomposer", route_on_error, {"END": END, "continue": "retriever"}
+# )
+# workflow.add_conditional_edges(
+#     "retriever", route_on_error, {"END": END, "continue": "coding_agent"}
+# )
 workflow.add_conditional_edges(
     "coding_agent",
     route_on_error,

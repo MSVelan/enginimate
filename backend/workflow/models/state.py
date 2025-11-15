@@ -62,7 +62,7 @@ class State(BaseModel):
         default="",
         description="Time at which video rendering job was submitted",
     )
-    completed_at: Optional[str] = Field(
+    completed_at: str = Field(
         default="",
         description="Time at which video rendering job was completed",
     )
@@ -71,7 +71,7 @@ class State(BaseModel):
         description="Indicates if the pipeline has \
         completed successfully",
     )
-    error_message: Optional[str] = Field(
+    error_message: str = Field(
         default="",
         description="Error message if the \
         pipeline failed",

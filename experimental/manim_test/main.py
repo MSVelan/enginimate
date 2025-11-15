@@ -1,3 +1,4 @@
+"""
 from manim import *
 
 
@@ -13,157 +14,152 @@ class DefaultTemplate(Scene):
         self.play(Create(square))  # animate the creation of the square
         self.play(Transform(square, circle))  # interpolate the square into the circle
         self.play(FadeOut(square))  # fade out animation
+"""
+
+from manim import *
+import numpy as np
 
 
-# from manim import *
-#
-#
-# class Enginimate(Scene):
-#     def construct(self):
-#         square = Square(side_length=2, color=WHITE)
-#         circle = Circle(radius=1, color=YELLOW)
-#         self.add(square, circle)
+class Enginimate(ZoomedScene):
+    def construct(self):
+        number_plane = NumberPlane()
+        dot = Dot(point=ORIGIN)
+        original_text = Text("Point Coordinates: (0, 0)", font_size=24).to_corner(UL)
+        self.add(self.camera.frame)
+        self.add(number_plane, original_text)
+        self.play(Create(dot), run_time=1)
+        path = Line(ORIGIN, [3, 4, 0])
+        self.play(MoveAlongPath(dot, path), run_time=2)
 
-#
-# from manim import *
-# import numpy as np
-#
-#
-# class Enginimate(Scene):
-#     def construct(self):
-#         # Start with a zoomed‑out view showing the whole square and circle
-#         # self.camera.frame.set_width(14)  # zoomed‑out (default is ~14)
-#
-#         # Title
-#         title = Tex(r"Approximating $\pi$ with Monte Carlo Method")
-#         title.to_edge(UP)
-#
-#         # Introductory text
-#         intro = Tex(
-#             r"We will estimate the area of the unit circle by randomly sampling points."
-#         )
-#         intro.next_to(title, DOWN, buff=0.6)
-#
-#         # Show title and intro
-#         self.play(Write(title, run_time=1.5), Write(intro, run_time=2))
-#         self.wait(1)
-#
-#         # Unit circle (radius = 1) centered at origin
-#         circle = Circle(radius=1, color=BLUE)
-#         circle.set_fill(BLUE_E, opacity=0.3)
-#
-#         # Surrounding square (bounding box) with side length 2
-#         square = Square(side_length=2, color=WHITE)
-#         square.set_stroke(WHITE, width=2)
-#         square.move_to(ORIGIN)
-#
-#         # Add circle and square to the scene
-#         self.play(Create(square, run_time=2), Create(circle, run_time=2))
-#         self.wait(1)
-#
-#         # Parameters
-#         num_points = 200  # reduced for reasonable runtime
-#         inside_color = GREEN
-#         outside_color = RED
-#
-#         # Containers for points and counters
-#         points = VGroup()
-#         inside_count = ValueTracker(0)
-#
-#         # Generate random points (invisible initially)
-#         for _ in range(num_points):
-#             x, y = np.random.uniform(-1, 1, 2)
-#             dot = Dot([x, y, 0], radius=0.03, fill_opacity=1)
-#             dot.set_color(inside_color if np.hypot(x, y) <= 1 else outside_color)
-#             dot.set_opacity(0)  # start invisible
-#             points.add(dot)
-#
-#         # Updater to count visible inside points
-#         def update_inside_count(_):
-#             inside = sum(
-#                 1 for d in points if d.color == inside_color and d.get_opacity() > 0
-#             )
-#             inside_count.set_value(inside)
-#
-#         points.add_updater(update_inside_count)
-#
-#         # Add points (still invisible)
-#         self.add(points)
-#
-#         # MathTex object to display current π approximation, updating dynamically
-#         pi_display = always_redraw(
-#             lambda: MathTex(
-#                 r"\pi \approx",
-#                 f"{4 * (inside_count.get_value() / num_points):.5f}",
-#                 font_size=36,
-#             ).to_corner(DR)
-#         )
-#         self.add(pi_display)
-#
-#         # ---------- Progress bar and counter ----------
-#         processed_tracker = ValueTracker(0)
-#
-#         # Background bar
-#         bar_bg = Rectangle(width=4, height=0.3, stroke_color=WHITE, fill_opacity=0)
-#         bar_bg.to_edge(DOWN, buff=0.5)
-#
-#         # Foreground (filled) bar
-#         bar_fg = always_redraw(
-#             lambda: Rectangle(
-#                 width=4 * (processed_tracker.get_value() / num_points),
-#                 height=0.3,
-#                 fill_color=GREEN,
-#                 fill_opacity=0.7,
-#                 stroke_width=0,
-#             ).align_to(bar_bg.get_left(), LEFT)
-#         )
-#
-#         # Counter text
-#         counter_text = always_redraw(
-#             lambda: Tex(
-#                 f"{int(processed_tracker.get_value())}/{num_points}",
-#                 font_size=24,
-#                 color=YELLOW,
-#             ).next_to(bar_bg, UP, buff=0.2)
-#         )
-#
-#         self.add(bar_bg, bar_fg, counter_text)
-#
-#         # Animate points appearing one by one with a short delay and update progress
-#         for i, dot in enumerate(points):
-#             self.play(
-#                 dot.animate.set_opacity(1),
-#                 processed_tracker.animate.set_value(i + 1),
-#                 run_time=0.07,
-#                 rate_func=linear,
-#             )
-#         self.wait(1)
-#
-#         # Show the formula used for the estimation
-#         formula = Tex(
-#             r"\pi \approx 4 \times \frac{\text{inside}}{\text{total}}",
-#             font_size=36,
-#         )
-#         formula.next_to(pi_display, DOWN, buff=0.5)
-#         self.play(Write(formula), run_time=2)
-#         self.wait(1)
-#
-#         # Emphasize the final estimate by moving it to the top centre and scaling it
-#         self.play(
-#             pi_display.animate.scale(2).to_edge(UP),
-#             run_time=2,
-#         )
-#         self.wait(1)
-#
-#         # Zoom in on the circle to highlight the final result
-#         self.play(
-#             self.camera.frame.animate.set_width(4).move_to(circle.get_center()),
-#             run_time=2,
-#         )
-#         self.wait(2)
-#
-#         # Clean up: remove updaters
-#         points.remove_updater(update_inside_count)
-#
-#         # Keep the final view for a moment
-#         self.wait(3)
+        # Apply linear transformation (scaling by 0.5 to stay within viewport)
+        new_position = np.array([1.5, 2, 0])  # 0.5x scaling of [3, 4, 0]
+        new_dot = Dot(point=new_position)
+        self.play(Transform(dot, new_dot), run_time=1.5)
+
+        # Update coordinates display
+        new_text = Text("Point Coordinates: (1.5, 2)", font_size=24).to_corner(UL)
+        self.play(FadeOut(original_text), run_time=0.5)
+        self.play(Write(new_text), run_time=1)
+
+        # Zoom out to show new location in context by scaling the zoomed camera frame
+        self.activate_zooming()
+        self.zoomed_camera.frame.scale(1.5)  # Adjust scale factor as needed
+        self.play(self.zoomed_camera.frame.animate.scale(1.5), run_time=1.5)
+
+
+"""
+from manim import *
+import random
+import numpy as np
+import math
+
+
+class Enginimate(Scene):
+    def construct(self):
+        # Dark background
+        self.camera.background_color = "#0e0e0e"
+
+        # Subtle grid lines to emphasize the unit square
+        grid = NumberPlane(
+            x_range=[-1.5, 1.5, 0.5],
+            y_range=[-1.5, 1.5, 0.5],
+            background_line_style={
+                "stroke_color": GREY_D,
+                "stroke_width": 1,
+                "stroke_opacity": 0.4,
+            },
+            axis_config={"stroke_color": GREY_D, "stroke_width": 2},
+        )
+        self.add(grid)
+
+        # Bounding square from (-1, -1) to (1, 1), slightly transparent
+        bounding_square = Square(side_length=2, color=WHITE).move_to(ORIGIN)
+        bounding_square.set_fill(opacity=0.1)
+        self.play(Create(bounding_square), run_time=2)
+
+        # Unit circle centered at the origin with radius 1
+        unit_circle = Circle(radius=1, color=YELLOW).move_to(ORIGIN)
+        self.play(Create(unit_circle), run_time=2)
+
+        # Display the formula A = πr² with r = 1, simplifying to A = π
+        formula = Text("A = πr²,  r = 1 → A = π", font_size=18, color=WHITE)
+        formula.next_to(unit_circle, UP, buff=0.5)
+        self.play(FadeIn(formula, shift=UP), run_time=1.5)
+
+        # Counters for total points and points inside the circle
+        total_text = Text("Total: 0", font_size=18, color=WHITE).next_to(
+            formula, DOWN, buff=0.3
+        )
+        inside_text = Text("Inside: 0", font_size=18, color=WHITE).next_to(
+            total_text, RIGHT, buff=0.6
+        )
+        self.play(FadeIn(VGroup(total_text, inside_text), shift=UP), run_time=1)
+
+        # Monte Carlo point generation
+        num_points = 200
+        total = 0
+        inside = 0
+
+        for _ in range(num_points):
+            # Random point inside the square [-1,1]×[-1,1]
+            x = random.uniform(-1, 1)
+            y = random.uniform(-1, 1)
+            point = np.array([x, y, 0])
+
+            # Check if inside the unit circle
+            distance = np.linalg.norm(point[:2])
+            point_color = BLUE if distance <= 1 else RED
+
+            # Create dot and add instantly (no heavy animation)
+            dot = Dot(point, radius=0.04, color=point_color)
+            self.add(dot)
+
+            # Update counters
+            total += 1
+            if distance <= 1:
+                inside += 1
+
+            # Refresh counter texts with a smooth replacement
+            new_total = Text(f"Total: {total}", font_size=18, color=WHITE).move_to(
+                total_text
+            )
+            new_inside = Text(f"Inside: {inside}", font_size=18, color=WHITE).move_to(
+                inside_text
+            )
+            self.play(
+                ReplacementTransform(total_text, new_total),
+                ReplacementTransform(inside_text, new_inside),
+                run_time=0.05,
+                lag_ratio=0,
+            )
+            total_text, inside_text = new_total, new_inside
+
+        # Compute π approximation
+        pi_estimate = 4 * inside / total
+        estimate_text = Text(f"π ≈ {pi_estimate:.5f}", font_size=18, color=GREEN)
+        estimate_text.move_to(ORIGIN).shift(UP * 1.8)
+        self.play(FadeIn(estimate_text), run_time=2)
+        self.wait(1)
+
+        # Show true value of π next to the approximation
+        true_pi_text = Text(f"π = {math.pi:.5f}", font_size=18, color=YELLOW)
+        true_pi_text.next_to(estimate_text, RIGHT, buff=0.8)
+        self.play(FadeIn(true_pi_text), run_time=1.5)
+
+        # Visualize error magnitude with a short horizontal bar
+        error = abs(pi_estimate - math.pi)
+        max_error_display = 0.5  # errors up to this will fill the bar
+        target_length = min(error / max_error_display, 1) * 2  # up to 2 units total
+        error_bar = Line(LEFT, RIGHT, color=RED, stroke_width=6)
+        # Scale to the desired length (original length is 2)
+        error_bar.scale(target_length / 2)
+        error_bar.next_to(estimate_text, DOWN, buff=0.3)
+        self.play(GrowFromCenter(error_bar), run_time=1.2)
+
+        # Optional: show numeric error value
+        error_text = Text(f"Error = {error:.5f}", font_size=18, color=RED)
+        error_text.next_to(error_bar, DOWN, buff=0.2)
+        self.play(FadeIn(error_text), run_time=1)
+
+        self.wait(2)
+"""

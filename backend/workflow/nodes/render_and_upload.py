@@ -7,22 +7,29 @@ from backend.workflow.models.state import State
 
 async def render_and_upload(state: State):
     job_uuid = str(uuid.uuid4())
+    print("Render and upload:")
     try:
-        await _make_async_post_request(
-            url="https://enginimate-render-service.onrender.com/trigger-rendering",
-            headers=None,
-            payload={
-                "uuid": job_uuid,
-                "code": state.code_generated,
-                "scene_name": "Enginimate",
-            },
+        asyncio.run(
+            _make_async_post_request(
+                url="https://enginimate-render-service.onrender.com/trigger-rendering",
+                headers=None,
+                payload={
+                    "uuid": job_uuid,
+                    "code": state.code_generated,
+                    "scene_name": "Enginimate",
+                },
+            )
         )
+        print("Triggered rendering process")
 
         # wait upto 15 mins for completion
-        result = await _make_async_get_request(
-            url=f"https://enginimate-render-service.onrender.com/render-result/{job_uuid}",
-            params={"wait": True, "timeout": 900},
+        result = asyncio.run(
+            _make_async_get_request(
+                url=f"https://enginimate-render-service.onrender.com/render-result/{job_uuid}",
+                params={"wait": "true", "timeout": 900},
+            )
         )
+        print("Done rendering and uploading")
     except Exception as e:
         return {"error_message": str(e)}
 
