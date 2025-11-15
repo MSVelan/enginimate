@@ -8,6 +8,8 @@ from typing import Literal
 from backend.workflow.models.state import State
 from backend.workflow.utils.HFSpace.hf_space_wrapper import ManimExecutor
 
+# TODO: create Enum class for evaluation for better llm output
+
 
 class EvaluatorAgentOutput(BaseModel):
     """Output format for code evaluation."""
