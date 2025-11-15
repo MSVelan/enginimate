@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "docker>=7.1.0",
     "docutils>=0.22.2",
+    "fastapi>=0.121.2",
     "jinja2>=3.1.6",
     "langchain>=1.0.2",
     "langchain-cerebras>=0.7.0",
@@ -25,7 +26,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "fastapi>=0.121.1",
     "ipykernel>=7.1.0",
     "ipywidgets>=8.1.7",
     "nest-asyncio>=1.6.0",
