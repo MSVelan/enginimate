@@ -16,8 +16,8 @@ class DefaultTemplate(Scene):
         self.play(FadeOut(square))  # fade out animation
 """
 
-from manim import *
 import numpy as np
+from manim import *
 
 
 class Enginimate(ZoomedScene):

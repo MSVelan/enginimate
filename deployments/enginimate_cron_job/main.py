@@ -1,10 +1,10 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-import psycopg
 import os
+
 import cloudinary
 import cloudinary.uploader
+import psycopg
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure Cloudinary
 cloudinary.config(

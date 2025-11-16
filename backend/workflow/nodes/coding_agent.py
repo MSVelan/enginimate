@@ -1,26 +1,30 @@
 import asyncio
+import logging
+
 from backoff import on_exception
 from langchain.agents import create_agent
 from langchain.agents.middleware import (
     ModelCallLimitMiddleware,
     SummarizationMiddleware,
-    wrap_model_call,
     ToolRetryMiddleware,
+    wrap_model_call,
 )
 from langchain.chat_models import init_chat_model
-from langchain_core.prompts import ChatPromptTemplate
-from langgraph.checkpoint.memory import InMemorySaver
-from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_cerebras import ChatCerebras
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.rate_limiters import InMemoryRateLimiter
+from langgraph.checkpoint.memory import InMemorySaver
 
 # from pydantic import BaseModel, Field
-
 from backend.workflow.models.state import State
 from backend.workflow.tools.coding_agent_tools import (
     fetch_code_snippets,
     fetch_docs,
     fetch_summary,
 )
+
+logger = logging.getLogger(__name__)
+# can set logging level with logger.setLevel
 
 
 # structured output is not available when using tool calls for langchain_groq
@@ -47,7 +51,7 @@ async def retry_model_middleware(request, handler):
         except Exception as e:
             if attempt == max_retries - 1:
                 raise  # Re-raise if all retries are exhausted
-            print(
+            logger.warning(
                 f"Retrying model call (attempt {attempt + 1}/{max_retries}) after error: {e}"
             )
             await asyncio.sleep(2**attempt)
@@ -92,7 +96,7 @@ Task:
 
 You must add surrounding Markdown fences (like ```python or ```) around the code.
 """
-    print("Coding Agent:")
+    logger.info("Coding Agent:")
     agent = create_agent(
         model,
         system_prompt=system_prompt,
@@ -112,13 +116,12 @@ You must add surrounding Markdown fences (like ```python or ```) around the code
             retry_model_middleware,
             ToolRetryMiddleware(
                 max_retries=2,
-                retry_on=(ConnectionError,),
                 on_failure="return_message",
             ),
         ],
         checkpointer=InMemorySaver(),
         tools=[fetch_summary, fetch_code_snippets, fetch_docs],
-        debug=True,
+        # debug=True,
     )
 
     query = """
@@ -152,7 +155,7 @@ Feedback:
     except Exception as e:
         return {"error_message": str(e)}
 
-    print("Generated code for current step")
+    logger.info("Generated code for current step")
     return {
         "code_generated": result["messages"][-1].content,
     }

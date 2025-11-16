@@ -1,12 +1,18 @@
+import logging
+
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
 
-from backend.workflow.models.state_agent_schemas import QueryDecomposerOutput
 from backend.workflow.models.state import State
+from backend.workflow.models.state_agent_schemas import QueryDecomposerOutput
+
+logger = logging.getLogger(__name__)
 
 
 async def query_decomposer(state: State):
+    logger.info("Query Decomposer:")
+    logger.info("Current step:", state.completed_steps + 1)
     rate_limiter = InMemoryRateLimiter(
         requests_per_second=0.2,  # Allow 0.2 requests per second (1 request every 5 seconds)
         check_every_n_seconds=2,  # Check every 100ms if a request is allowed
@@ -38,8 +44,8 @@ Decomposition Rules:
 """
 
     # This should set state["current_step_description"] as well
-    print("Current step:", state.completed_steps + 1)
     query = state.steps[state.completed_steps].description
+    logger.info(query)
     prompt_template = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -49,8 +55,6 @@ Decomposition Rules:
 
     query_decomposer_llm = llm.with_structured_output(QueryDecomposerOutput)
     pipeline = prompt_template | query_decomposer_llm
-    print("Query Decomposer:")
-    print(query)
     err = None
     max_attempts = 3
     for attempt in range(max_attempts):

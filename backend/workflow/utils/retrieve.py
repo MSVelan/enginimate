@@ -1,4 +1,4 @@
-async def retrieve_docs(user_query, k_code=3, k_doc=2, k_summary=2):
+async def retrieve_docs(user_query, k_code=2, k_doc=1, k_summary=1):
     query = _get_detailed_instruct(user_query)
     code_docs = await _retrieve_docs(query, k=k_code, type="code")
     docstrings = await _retrieve_docs(query, k=k_doc, type="documentation")
@@ -49,7 +49,7 @@ async def _get_pg_engine():
     return pg_engine
 
 
-async def _retrieve_docs(query, k=3, type="code"):
+async def _retrieve_docs(query, k=2, type="code"):
     """Retrieve documents of specific type for a given query.
     Returns List[Tuple[Document: str, metadata: dict]]: list of Document objects
     with similarity score.
@@ -63,7 +63,7 @@ async def _retrieve_docs(query, k=3, type="code"):
 
     pg_engine = await _get_pg_engine()
 
-    query_embedding = embed_service.embed_query(query)
+    query_embedding = await embed_service.embed_query(query)
     embedding_str = f"[{','.join(map(str, query_embedding))}]"
 
     sql_query = """

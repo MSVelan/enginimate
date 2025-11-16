@@ -1,10 +1,10 @@
-from typing import Optional
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import logging
 import uuid
+from typing import Optional
 
-from manim_executor import test_code, run_and_upload, cleanup
+from fastapi import FastAPI, HTTPException
+from manim_executor import cleanup, run_and_upload, test_code
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -1,12 +1,16 @@
+import logging
+
 from backend.workflow.models.state import State
-from backend.workflow.utils.retrieve import retrieve_docs, format_retrieved_docs
+from backend.workflow.utils.retrieve import format_retrieved_docs, retrieve_docs
+
+logger = logging.getLogger(__name__)
 
 
 async def retriever(state: State):
     code_prompt = state.prompts.code_prompt
     documentation_prompt = state.prompts.documentation_prompt
     summary_prompt = state.prompts.summary_prompt
-    print("Retriever: ")
+    logger.info("Retriever: ")
     err = None
     try:
         code_docs = await retrieve_docs(code_prompt, k_doc=0, k_summary=0)
@@ -18,7 +22,7 @@ async def retriever(state: State):
         err = repr(e)
     if err is not None:
         return {"error_message": err}
-    print("Retrieved documents for current step")
+    logger.info("Retrieved documents for current step")
     return {
         "formatted_docs": format_retrieved_docs(
             code_docs + documentation_docs + summary_docs

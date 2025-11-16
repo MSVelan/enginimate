@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import logging
 import os
 import re
 from textwrap import dedent
@@ -16,6 +17,8 @@ from langchain_text_splitters import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from backend.workflow.utils.HFSpace.hf_space_wrapper import CustomEmbedding
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -97,9 +100,9 @@ async def ingest_docs():
                     )
                     doc_ids.extend(file_doc_ids)
             except Exception as exc:
-                print("%r generated an exception: %s" % (file, exc))
+                logger.exception("%r generated an exception: %s" % (file, exc))
             else:
-                print(
+                logger.info(
                     "Embedded %r file- contains %d Document objects, \
 added %d objects to store"
                     % (file, len(file_documents), n)
@@ -393,4 +396,4 @@ def _get_summary_documents(blocks: List[Tuple[str, str]], source: str):
 
 if __name__ == "__main__":
     doc_ids = asyncio.run(ingest_docs())
-    print("Ingested %d documents" % len(doc_ids))
+    logger.info("Ingested %d documents" % len(doc_ids))

@@ -1,12 +1,11 @@
+from typing import Literal, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from typing import Literal, Optional
-
 from backend.workflow.models.state_agent_schemas import (
-    VideoCreationStep,
     QueryDecomposerOutput,
+    VideoCreationStep,
 )
 
 

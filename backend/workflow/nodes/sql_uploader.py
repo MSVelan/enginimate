@@ -1,8 +1,12 @@
-import psycopg
+import logging
 import os
+
+import psycopg
 from dotenv import load_dotenv
 
 from backend.workflow.models.state import State
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -18,8 +22,8 @@ def _get_connection_string():
 
 
 async def sql_uploader(state: State):
+    logger.info("SQL Uploader:")
     conn_string = _get_connection_string()
-    print("SQL Uploader:")
     try:
         with psycopg.connect(conn_string) as conn:
             RENDER_TABLE = os.getenv("RENDER_TABLE")
@@ -38,7 +42,7 @@ async def sql_uploader(state: State):
                     );
                 """
                 cur.execute(create_table_query)
-                print("Created table")
+                logger.info("Created table")
                 insert_query = f"""
                     INSERT INTO {RENDER_TABLE} (uuid, query, code_generated, url,
                     public_id, created_at, completed_at)
@@ -56,7 +60,7 @@ async def sql_uploader(state: State):
                         state.completed_at,
                     ),
                 )
-                print("Inserted record")
+                logger.info("Inserted record")
     except Exception as e:
-        print(e)
+        logger.error(e)
         return {"error_message": str(e)}

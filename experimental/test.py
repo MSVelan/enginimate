@@ -3,9 +3,10 @@
 Test script for the LLM API
 Usage: python test_api.py <your-space-url>
 """
-import requests
 import json
 import os
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()

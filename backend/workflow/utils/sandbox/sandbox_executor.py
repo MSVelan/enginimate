@@ -1,8 +1,11 @@
-import docker
+import logging
 import os
 from typing import Optional
 
+import docker
 import docker.errors
+
+logger = logging.getLogger(__name__)
 
 
 class DockerSandbox:
@@ -23,13 +26,13 @@ class DockerSandbox:
                 # decode=True
             )
         except docker.errors.BuildError as e:
-            print("Build error logs:", flush=True)
+            logger.exception("Build error logs:")
             for log in e.build_log:
                 if "stream" in log:
-                    print(log["stream"].strip())
+                    logger.debug(log["stream"].strip())
             raise
 
-        print("Build successful", flush=True)
+        logger.info("Build successful")
         # Create container with security constraints and proper logging
         self.container = self.client.containers.run(
             "agent-sandbox",
@@ -43,7 +46,7 @@ class DockerSandbox:
             # cap_drop=["ALL"],
             # environment={"HF_TOKEN": os.getenv("HF_TOKEN")},
         )
-        print("Container created", flush=True)
+        logger.info("Container created")
 
     def run_code(self, code: str, cls_name: str = "Enginimate") -> Optional[str]:
         """Runs manim code and returns error if found"""
@@ -52,17 +55,17 @@ class DockerSandbox:
 
         try:
             # Write to main.py file
-            print("Copying code to main.py...", flush=True)
+            logger.info("Copying code to main.py...")
             self.container.exec_run(cmd=[code, ">", "main.py"], user="bot")
             # Execute code in container
-            print("Running manim -ql main.py Enginimate", flush=True)
+            logger.info("Running manim -ql main.py Enginimate")
             self.container.exec_run(
                 cmd=["manim", "-ql", "main.py", cls_name], user="bot"
             )
-            print("Successful execution of manim code", flush=True)
+            logger.info("Successful execution of manim code")
         except docker.errors.APIError as e:
-            print("Error logs while running:", flush=True)
-            print(str(e), flush=True)
+            logger.exception("Error logs while running:")
+            logger.exception(str(e))
             raise
         except Exception as e:  # mostly raises docker.errors.ApiError
             raise
@@ -80,7 +83,7 @@ class DockerSandbox:
                 # Container already removed, this is expected
                 pass
             except Exception as e:
-                print(f"Error during cleanup: {e}", flush=True)
+                logger.exception(f"Error during cleanup: {e}")
             finally:
                 self.container = None  # Clear the reference
 

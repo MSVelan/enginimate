@@ -1,11 +1,11 @@
-import uvicorn
-import redis.asyncio as redis
-
 from enum import Enum
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from typing import Optional
+
+import redis.asyncio as redis
+import uvicorn
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
 from backend.workflow.graph import graph
 from backend.workflow.models.state import State
@@ -45,7 +45,7 @@ async def _run_graph_and_store(uuid: str, query: str):
     await r.hset(uuid, mapping={"status": JobStatus.PROCESSING, "query": query})
     state_input = {"uuid": uuid, "query": query}
     state = State(**state_input)
-    result_state = await graph.ainvoke(state)
+    result_state = await graph.ainvoke(state, config={"recursion_limit": 150})
     if result_state.get("error_message"):
         await r.hset(
             uuid,
@@ -68,9 +68,11 @@ async def _run_graph_and_store(uuid: str, query: str):
 
 @app.post("/run", response_model=JobResultResponse)
 async def run_workflow(request: Request, background_tasks: BackgroundTasks):
+    # if request uuid already exists, override
     if await r.exists(request.uuid):
-        status = await r.hget(request.uuid, "status")
-        return JobResultResponse(uuid=request.uuid, status=JobStatus(status))
+        await r.delete(request.uuid)
+        # status = await r.hget(request.uuid, "status")
+        # return JobResultResponse(uuid=request.uuid, status=JobStatus(status))
 
     await r.hset(
         request.uuid,
@@ -97,4 +99,4 @@ async def get_result(uuid: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="debug")

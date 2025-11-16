@@ -1,6 +1,6 @@
 from langchain.tools import tool
 
-from backend.workflow.utils.retrieve import retrieve_docs, format_retrieved_docs
+from backend.workflow.utils.retrieve import format_retrieved_docs, retrieve_docs
 
 
 @tool

@@ -1,15 +1,12 @@
+import asyncio
+import logging
 import os
 import shutil
+import subprocess
 from typing import Optional
-
-import logging
-import asyncio
 
 import cloudinary
 from cloudinary import CloudinaryVideo
-
-import subprocess
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

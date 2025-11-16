@@ -1,9 +1,10 @@
+import logging
+from typing import List, Optional, Union
+
+import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
-from typing import List, Union, Optional
-import numpy as np
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def create_embeddings(request: EmbeddingRequest):
         local_model_name = model_name
         if model_name != request.model:
             local_model = SentenceTransformer(request.model)
-            print("Loaded model: ", request.model)
+            logger.info("Loaded model: ", request.model)
             local_model_name = request.model
         # Handle both single string and list of strings
         texts = [request.input] if isinstance(request.input, str) else request.input

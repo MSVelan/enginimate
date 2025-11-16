@@ -1,12 +1,16 @@
+import logging
+from typing import Literal
+
 from langchain.chat_models import init_chat_model
+from langchain_cerebras import ChatCerebras
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
-from langchain_cerebras import ChatCerebras
 from pydantic import BaseModel, Field
-from typing import Literal
 
 from backend.workflow.models.state import State
 from backend.workflow.utils.HFSpace.hf_space_wrapper import ManimExecutor
+
+logger = logging.getLogger(__name__)
 
 # TODO: create Enum class for evaluation for better llm output
 
@@ -25,24 +29,25 @@ class EvaluatorAgentOutput(BaseModel):
 
 
 async def evaluator_agent(state: State):
+    logger.info("Evaluator:")
     # check for syntax error first
     executor = ManimExecutor(uuid=state.uuid)
     err = ""
     final_code = "\n".join(state.code_generated.split("\n")[1:-1])
     try:
-        err = executor.test_code(final_code)
+        err = await executor.test_code(final_code)
     except Exception as e:
         return {"code_generated": final_code, "error_message": str(e)}
 
     if err:
-        print("Execution error:", err)
+        logger.info("Execution error:", err)
         return {
             "code_generated": final_code,
             "error": err,
             "evaluator_next_step": "retry",
             "feedback": "Rectify the syntax error",
         }
-    print("No syntax errors")
+    logger.info("No syntax errors")
 
     # llm = init_chat_model("gpt-oss-120b", model_provider="cerebras")
     # llm = init_chat_model("groq:llama-3.1-8b-instant")
@@ -90,7 +95,6 @@ Code generated so far:
             ("user", query),
         ]
     )
-    print("Evaluator:")
     evaluator = llm.with_structured_output(EvaluatorAgentOutput)
     pipeline = prompt_template | evaluator
     max_attempts = 3
@@ -108,8 +112,8 @@ Code generated so far:
             if attempt == max_attempts - 1:
                 return {"code_generated": final_code, "error_message": str(e)}
     if result.evaluation == "retry":
-        print("Retry")
-        print("Feedback", result.feedback)
+        logger.info("Retry")
+        logger.info("Feedback", result.feedback)
         return {
             "code_generated": final_code,
             "feedback": result.feedback,
@@ -117,7 +121,7 @@ Code generated so far:
         }
 
     if len(state.steps) == state.completed_steps + 1:
-        print("Done scene generation")
+        logger.info("Done scene generation")
         return {
             "code_generated": final_code,
             "feedback": "",
@@ -125,8 +129,8 @@ Code generated so far:
             "evaluator_next_step": "continue",
         }
 
-    print("Move to next step")
-    print("Completed steps: ", state.completed_steps + 1)
+    logger.info("Move to next step")
+    logger.info("Completed steps: ", state.completed_steps + 1)
     return {
         "code_generated": final_code,
         "feedback": "",

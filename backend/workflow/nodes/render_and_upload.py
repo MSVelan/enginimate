@@ -1,35 +1,35 @@
 import asyncio
-import aiohttp
+import logging
 import uuid
 
+import aiohttp
+
 from backend.workflow.models.state import State
+
+logger = logging.getLogger(__name__)
 
 
 async def render_and_upload(state: State):
     job_uuid = str(uuid.uuid4())
-    print("Render and upload:")
+    logger.info("Render and upload:")
     try:
-        asyncio.run(
-            _make_async_post_request(
-                url="https://enginimate-render-service.onrender.com/trigger-rendering",
-                headers=None,
-                payload={
-                    "uuid": job_uuid,
-                    "code": state.code_generated,
-                    "scene_name": "Enginimate",
-                },
-            )
+        await _make_async_post_request(
+            url="https://enginimate-render-service.onrender.com/trigger-rendering",
+            headers=None,
+            payload={
+                "uuid": job_uuid,
+                "code": state.code_generated,
+                "scene_name": "Enginimate",
+            },
         )
-        print("Triggered rendering process")
+        logger.info("Triggered rendering process")
 
         # wait upto 15 mins for completion
-        result = asyncio.run(
-            _make_async_get_request(
-                url=f"https://enginimate-render-service.onrender.com/render-result/{job_uuid}",
-                params={"wait": "true", "timeout": 900},
-            )
+        result = await _make_async_get_request(
+            url=f"https://enginimate-render-service.onrender.com/render-result/{job_uuid}",
+            params={"wait": "true", "timeout": 900},
         )
-        print("Done rendering and uploading")
+        logger.info("Done rendering and uploading")
     except Exception as e:
         return {"error_message": str(e)}
 
@@ -53,7 +53,7 @@ async def _make_async_post_request(url, headers, payload, max_retries=3):
                     resp = await response.json()
                     return resp
             except Exception as e:
-                print(f"Error during POST request: {e}")
+                logger.warning(f"Error during POST request: {e}")
                 await asyncio.sleep(1)
                 if i == max_retries - 1:
                     raise e
@@ -68,7 +68,7 @@ async def _make_async_get_request(url, params, max_retries=3):
                     resp = await response.json()
                     return resp
             except Exception as e:
-                print(f"Error during GET request: {e}")
+                logger.warning(f"Error during GET request: {e}")
                 await asyncio.sleep(1)
                 if i == max_retries - 1:
                     raise e

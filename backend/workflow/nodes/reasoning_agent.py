@@ -1,13 +1,17 @@
+import logging
 from typing import Annotated
+
 import annotated_types
 from langchain.chat_models import init_chat_model
+from langchain_cerebras import ChatCerebras
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
-from langchain_cerebras import ChatCerebras
 from pydantic import BaseModel, Field
 
-from backend.workflow.models.state_agent_schemas import VideoCreationStep
 from backend.workflow.models.state import State
+from backend.workflow.models.state_agent_schemas import VideoCreationStep
+
+logger = logging.getLogger(__name__)
 
 
 class ReasoningAgentOutput(BaseModel):
@@ -22,10 +26,11 @@ class ReasoningAgentOutput(BaseModel):
 
 
 async def reasoning_agent(state: State):
+    logger.info("Reasoning Agent: ")
     rate_limiter = InMemoryRateLimiter(
-        requests_per_second=0.2,  # Allow 0.2 requests per second (1 request every 5 seconds)
-        check_every_n_seconds=2,  # Check every 100ms if a request is allowed
-        # max_bucket_size=5,  # Allow a burst of up to 5 requests
+        requests_per_second=0.2,
+        check_every_n_seconds=2,
+        # max_bucket_size=5,
     )
     # llm = init_chat_model(
     #     "llama-3.3-70b", model_provider="cerebras", rate_limiter=rate_limiter
@@ -65,7 +70,6 @@ less if the complexity of query is less.
 
     planner = llm.with_structured_output(ReasoningAgentOutput)
     pipeline = prompt_template | planner
-    print("Reasoning Agent: ")
     err = None
     try:
         scene_generation_steps = await pipeline.ainvoke(
@@ -75,5 +79,5 @@ less if the complexity of query is less.
         err = repr(e)
     if err is not None:
         return {"error_message": err}
-    print(scene_generation_steps.steps)
+    logger.info(scene_generation_steps.steps)
     return {"steps": scene_generation_steps.steps}
