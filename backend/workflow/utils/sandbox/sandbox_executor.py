@@ -64,8 +64,7 @@ class DockerSandbox:
             )
             logger.info("Successful execution of manim code")
         except docker.errors.APIError as e:
-            logger.exception("Error logs while running:")
-            logger.exception(str(e))
+            logger.exception("Error logs while running: " + str(e))
             raise
         except Exception as e:  # mostly raises docker.errors.ApiError
             raise

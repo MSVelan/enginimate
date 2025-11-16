@@ -59,6 +59,8 @@ less if the complexity of query is less.
 5. Mention any special camera movements or effects if they enhance visual appeal.
 6. Describe the order of execution logically, from setup to rendering.
 7. Avoid writing actual Manim code — focus only on the planning and structure.
+8. Think carefully and break down the prompt into appropriate steps for 
+visual clarity and better animation.
 """
 
     prompt_template = ChatPromptTemplate.from_messages(

@@ -40,7 +40,7 @@ async def evaluator_agent(state: State):
         return {"code_generated": final_code, "error_message": str(e)}
 
     if err:
-        logger.info("Execution error:", err)
+        logger.info("Execution error:" + err)
         return {
             "code_generated": final_code,
             "error": err,
@@ -67,6 +67,7 @@ Evaluation Criteria:
 3. Animation Logic & Dependencies: Do animations follow a logical sequence?
 4. Transformations: Do transformations make sense for the Mobject types?
 5. Timing: Is run_time appropriate? Is the timing of animation adequate enough to pay proper attention to specific parts of the screen.
+6. Step Compliance: Check whether the current step of the multi-step generation process is interpreted correctly and reflected in the produced code. Although this condition can be loosened for steps like "Render the animation as video", because the actual rendering of manim video is done by running command in the command line.
 """
     # You are a senior Python QA developer
     # specializing in the Manim animation library.
@@ -113,7 +114,7 @@ Code generated so far:
                 return {"code_generated": final_code, "error_message": str(e)}
     if result.evaluation == "retry":
         logger.info("Retry")
-        logger.info("Feedback", result.feedback)
+        logger.info("Feedback " + result.feedback)
         return {
             "code_generated": final_code,
             "feedback": result.feedback,
@@ -130,7 +131,7 @@ Code generated so far:
         }
 
     logger.info("Move to next step")
-    logger.info("Completed steps: ", state.completed_steps + 1)
+    logger.info("Completed steps: " + str(state.completed_steps + 1))
     return {
         "code_generated": final_code,
         "feedback": "",

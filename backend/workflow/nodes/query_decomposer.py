@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 async def query_decomposer(state: State):
     logger.info("Query Decomposer:")
-    logger.info("Current step:", state.completed_steps + 1)
+    logger.info("Current step: " + str(state.completed_steps + 1))
     rate_limiter = InMemoryRateLimiter(
         requests_per_second=0.2,  # Allow 0.2 requests per second (1 request every 5 seconds)
         check_every_n_seconds=2,  # Check every 100ms if a request is allowed

@@ -48,7 +48,7 @@ def create_embeddings(request: EmbeddingRequest):
         local_model_name = model_name
         if model_name != request.model:
             local_model = SentenceTransformer(request.model)
-            logger.info("Loaded model: ", request.model)
+            logger.info("Loaded model: " + request.model)
             local_model_name = request.model
         # Handle both single string and list of strings
         texts = [request.input] if isinstance(request.input, str) else request.input
@@ -73,7 +73,7 @@ def create_embeddings(request: EmbeddingRequest):
         )
 
     except Exception as e:
-        logger.error(f"Error generating embeddings: {str(e)}")
+        logger.error(f"Error generating embeddings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

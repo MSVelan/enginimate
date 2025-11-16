@@ -87,12 +87,13 @@ Task:
 1. Add code only for the current phase to the existing code
 2. Make sure the text is clearly visible and not out of bounds with appropriate font size
 3. Make sure that no Mobjects overlap without any reason.
-3. Check your code for common issues:
+4. Check your code for common issues:
    - Are all objects added to scene before animating?
    - Are coordinates within bounds (-7 to 7, -4 to 4)?
    - Are animations in logical order?
    - Do transforms make sense?
    - Use the apt time length for the animation
+5. Make sure to interpret the current phase logically and incorporate that in the current phase whenever possible.
 
 You must add surrounding Markdown fences (like ```python or ```) around the code.
 """

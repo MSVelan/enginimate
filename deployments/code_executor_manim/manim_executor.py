@@ -46,7 +46,7 @@ async def _uploadVideo(pjt_name):
         else:
             raise Exception("video wasnt generated to start uploading")
     except Exception as e:
-        logger.error("Error uploading video:", repr(e))
+        logger.error("Error uploading video: " + repr(e))
         raise
 
     return url
@@ -81,7 +81,7 @@ async def test_code(pjt_name, code, cls_name="Enginimate") -> Optional[str]:
         logger.error("File not found")
         raise
     except Exception as e:
-        logger.error("Unexpected error: ", repr(e))
+        logger.error("Unexpected error: " + repr(e))
         raise
     return ""
 
@@ -154,7 +154,7 @@ async def run_and_upload(pjt_name, code, cls_name="Enginimate") -> Optional[str]
         logger.error("File not found")
         raise
     except Exception as e:
-        logger.error("Unexpected error: ", repr(e))
+        logger.error("Unexpected error: " + repr(e))
         raise
 
 

@@ -32,7 +32,6 @@ jobs:
             texlive-fonts-extra \
             texlive-science \
             tipa \
-            && rm -rf /var/lib/apt/lists/*
 
       - name: Install Manim
         run: |

@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Optional
 
+import logging
 import redis.asyncio as redis
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -9,6 +10,10 @@ from pydantic import BaseModel
 
 from backend.workflow.graph import graph
 from backend.workflow.models.state import State
+from backend.workflow.utils.logging_config import configure_logging
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 origins = ["http://localhost:3000"]
 
@@ -45,8 +50,13 @@ async def _run_graph_and_store(uuid: str, query: str):
     await r.hset(uuid, mapping={"status": JobStatus.PROCESSING, "query": query})
     state_input = {"uuid": uuid, "query": query}
     state = State(**state_input)
+    logger.info(f"Started workflow for uuid: {uuid} - query: {query}")
     result_state = await graph.ainvoke(state, config={"recursion_limit": 150})
     if result_state.get("error_message"):
+        logger.error(
+            f"Error occurred in the workflow for uuid: {uuid} \
+                - query: {query} - {result_state.get("error_message")}"
+        )
         await r.hset(
             uuid,
             mapping={
@@ -56,6 +66,10 @@ async def _run_graph_and_store(uuid: str, query: str):
             },
         )
     else:
+        logger.info(
+            f"Workflow completed successfully for uuid: {uuid} - query: {query} \
+                - video url: {result_state['url']}"
+        )
         await r.hset(
             uuid,
             mapping={
@@ -78,7 +92,7 @@ async def run_workflow(request: Request, background_tasks: BackgroundTasks):
         request.uuid,
         mapping={"status": JobStatus.PENDING, "query": request.query},
     )
-    await r.expire(request.uuid, 60 * 60 * 24)
+    await r.expire(request.uuid, 60 * 60 * 4)
 
     background_tasks.add_task(_run_graph_and_store, request.uuid, request.query)
     return JobResultResponse(uuid=request.uuid, status=JobStatus.PENDING)
@@ -99,4 +113,4 @@ async def get_result(uuid: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="debug")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
