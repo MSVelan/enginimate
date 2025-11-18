@@ -1,4 +1,4 @@
-FROM python:3.10-bullseye
+FROM python:3.12
 
 # Install build dependencies
 SHELL [ "/bin/bash", "-c" ]
@@ -9,6 +9,15 @@ RUN apt-get update && \
     python3-dev \
     libcairo2-dev \
     ffmpeg \
+    texlive \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-pictures \
+    texlive-fonts-extra \
+    texlive-science \
+    tipa \
+    dvisvgm \
+    redis-server \
     libpango1.0-dev && \
     pip install --no-cache-dir --upgrade pip && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
@@ -21,7 +30,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 # Set working directory
 WORKDIR /app
 
-RUN useradd -m bot
+# RUN useradd -m bot
 
 RUN uv init enginimate && \
     cd enginimate && \
@@ -31,31 +40,40 @@ RUN uv init enginimate && \
     cloudinary \
     fastapi \
     pydantic \
+    redis \
+    hiredis \
+    sse-starlette \
     uvicorn[standard]
 
 # yes '' | manim init project manim_test --default
 
-RUN chown -R bot /app/enginimate/
+# RUN chown -R bot /app/enginimate/
 
-RUN mkdir -p /app/enginimate/data/ && chown bot:bot /app/enginimate/data
+# RUN mkdir -p /app/enginimate/data/ && chown bot:bot /app/enginimate/data
+RUN mkdir -p /app/enginimate/data/
 
 VOLUME [ "/app/enginimate/data" ]
 
 # Run with limited privileges
-USER bot
-ENV HOME=/home/bot \
-    PYTHONUNBUFFERED=1
+# USER bot
+# ENV HOME=/home/bot \
+#     PYTHONUNBUFFERED=1
+
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/enginimate
 
-COPY --chown=bot:bot app.py .
-COPY --chown=bot:bot manim_executor.py .
+# COPY --chown=bot:bot app.py .
+# COPY --chown=bot:bot manim_executor.py .
 
-ENV PATH="/app/enginimate/.venv/bin:${PATH}"
+COPY app.py .
+COPY manim_executor.py .
+
+ENV PATH="/app/enginimate/.venv/bin:/usr/bin:/usr/local/bin:${PATH}"
 
 # add __init__.py in manim_test on startup
 # WORKDIR /app/enginimate/manim_test
 
 EXPOSE 7860
 
-CMD [ "uvicorn", "app:app", "--workers", "3", "--host", "0.0.0.0", "--port", "7860" ]
+CMD ["sh", "-c", "redis-server --bind 0.0.0.0 --port 6379 & exec uvicorn app:app --workers 2 --host 0.0.0.0 --port 7860"]

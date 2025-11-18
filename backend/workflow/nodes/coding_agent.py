@@ -64,8 +64,14 @@ async def coding_agent(state: State):
         check_every_n_seconds=2,  # Check every 100ms if a request is allowed
         # max_bucket_size=5,  # Allow a burst of up to 5 requests
     )
-    # model = init_chat_model("groq:llama-3.1-8b-instant", rate_limiter=rate_limiter)
     model = init_chat_model("groq:qwen/qwen3-32b", rate_limiter=rate_limiter)
+
+    # model = init_chat_model("groq:llama-3.1-8b-instant", rate_limiter=rate_limiter)
+    # model = init_chat_model("groq:llama-3.3-70b-versatile", rate_limiter=rate_limiter)
+    # model = init_chat_model(
+    #     "groq:moonshotai/kimi-k2-instruct-0905", rate_limiter=rate_limiter
+    # )
+    # model = init_chat_model("groq:openai/gpt-oss-20b", rate_limiter=rate_limiter)
     # model = ChatCerebras(model="qwen-3-32b", rate_limiter=rate_limiter)
     # model = init_chat_model(
     #     "qwen-3-32b", model_provider="cerebras", rate_limiter=rate_limiter
@@ -94,6 +100,7 @@ Task:
    - Do transforms make sense?
    - Use the apt time length for the animation
 5. Make sure to interpret the current phase logically and incorporate that in the current phase whenever possible.
+6. Make use of the tools (`fetch_summary`, `fetch_code_snippets`, `fetch_docs`) when you aren't sure and faced with any syntax issues related to manim.
 
 You must add surrounding Markdown fences (like ```python or ```) around the code.
 """

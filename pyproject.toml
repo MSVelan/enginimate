@@ -24,6 +24,7 @@ dependencies = [
     "pypandoc>=1.15",
     "python-dotenv>=1.2.1",
     "redis>=7.0.1",
+    "sse-starlette>=3.0.3",
     "unstructured[rst]>=0.18.15",
 ]
 

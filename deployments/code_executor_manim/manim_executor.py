@@ -14,8 +14,22 @@ logger = logging.getLogger(__name__)
 
 def _initialize_manim_project(pjt_name):
     try:
+        # actually there is no point in doing manim init
+        # can just create pjt_name directory with main.py file
+        # subprocess.run(
+        #     f"yes '' | manim init project {pjt_name} --default",
+        #     shell=True,
+        #     check=True,
+        #     text=True,
+        # )
         subprocess.run(
-            f"yes '' | manim init project {pjt_name} --default",
+            f"mkdir -p {pjt_name}",
+            shell=True,
+            check=True,
+            text=True,
+        )
+        subprocess.run(
+            "touch main.py",
             shell=True,
             check=True,
             text=True,
@@ -46,7 +60,7 @@ async def _uploadVideo(pjt_name):
         else:
             raise Exception("video wasnt generated to start uploading")
     except Exception as e:
-        logger.error("Error uploading video: " + repr(e))
+        logger.error("Error uploading video:", repr(e))
         raise
 
     return url
@@ -81,8 +95,13 @@ async def test_code(pjt_name, code, cls_name="Enginimate") -> Optional[str]:
         logger.error("File not found")
         raise
     except Exception as e:
-        logger.error("Unexpected error: " + repr(e))
+        logger.error("Unexpected error: ", repr(e))
         raise
+    finally:
+        try:
+            cleanup(pjt_name)
+        except Exception as ce:
+            logger.error(f"Cleanup failed: {ce}")
     return ""
 
 
@@ -154,7 +173,7 @@ async def run_and_upload(pjt_name, code, cls_name="Enginimate") -> Optional[str]
         logger.error("File not found")
         raise
     except Exception as e:
-        logger.error("Unexpected error: " + repr(e))
+        logger.error("Unexpected error: ", repr(e))
         raise
 
 

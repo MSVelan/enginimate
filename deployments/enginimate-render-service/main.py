@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import hmac
+import json
 import os
 from datetime import datetime
 from enum import Enum
@@ -11,6 +12,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
 
 origins = ["https://api.github.com"]
 
@@ -203,7 +205,7 @@ async def get_render_result(uuid: str, wait: bool = False, timeout: int = 300):
             "video_url": job["video_url"],
             "public_id": job["public_id"],
             "created_at": job["created_at"],
-            "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+            "completed_at": job["completed_at"],
         }
     elif job["status"] == JobStatus.FAILED:
         return {
@@ -211,7 +213,7 @@ async def get_render_result(uuid: str, wait: bool = False, timeout: int = 300):
             "uuid": uuid,
             "error": job["error"],
             "created_at": job["created_at"],
-            "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+            "completed_at": job["completed_at"],
         }
     else:
         return {
@@ -221,6 +223,52 @@ async def get_render_result(uuid: str, wait: bool = False, timeout: int = 300):
             "message": "Job is still processing",
             "created_at": job["created_at"],
         }
+
+
+async def _wait_for_final_status(uuid: str, poll_interval: float = 5, timeout=60 * 30):
+    """Poll Redis until the job reaches a terminal state."""
+    now = datetime.datetime.now()
+    maxt = datetime.timedelta(seconds=timeout) + now
+    while datetime.datetime.now() <= maxt:
+        data = jobs[uuid]
+        if not data:
+            return {
+                "success": JobStatus.FAILED,
+                "error": "Job not found",
+                "video_url": "",
+                "public_id": "",
+                "created_at": data["created_at"],
+            }
+        status = data.get("status")
+        if status in (JobStatus.COMPLETED, JobStatus.FAILED):
+            return {
+                "success": status,
+                "uuid": uuid,
+                "video_url": data.get("video_url"),
+                "public_id": data.get("public_id"),
+                "error": data.get("error"),
+                "created_at": data.get("created_at"),
+                "completed_at": data.get("completed_at"),
+            }
+
+        await asyncio.sleep(poll_interval)
+
+
+@app.get("/events/{uuid}")
+async def stream_result(uuid: str):
+    """
+    Returns an SSE stream that emits a single event when the job finishes.
+    """
+
+    async def event_generator():
+        result = await _wait_for_final_status(uuid)
+        # The payload is sent as a JSON string in the `data` field.
+        yield {
+            "event": "job_finished",
+            "data": json.dumps(result),
+        }
+
+    return EventSourceResponse(event_generator())
 
 
 @app.post("/webhook/render-complete")
@@ -293,6 +341,7 @@ async def root():
             "POST /trigger-rendering": "Trigger Manim rendering job",
             "GET /render-status/{uuid}": "Check job status",
             "GET /render-result/{uuid}": "Get video URL (supports wait parameter)",
+            "GET /events/{uuid}": "SSE stream that emits a single event when the job finishes",
             "GET /jobs": "List all jobs",
         },
     }

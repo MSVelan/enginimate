@@ -32,11 +32,13 @@ async def reasoning_agent(state: State):
         check_every_n_seconds=2,
         # max_bucket_size=5,
     )
+    llm = init_chat_model("groq:moonshotai/kimi-k2-instruct-0905")
+
     # llm = init_chat_model(
     #     "llama-3.3-70b", model_provider="cerebras", rate_limiter=rate_limiter
     # )
     # llm = init_chat_model("groq:openai/gpt-oss-20b")
-    llm = init_chat_model("groq:llama-3.3-70b-versatile")
+    # llm = init_chat_model("groq:llama-3.3-70b-versatile")
     # llm = ChatCerebras(model="llama-3.3-70b")
 
     system_prompt = """You are an expert senior Python developer 

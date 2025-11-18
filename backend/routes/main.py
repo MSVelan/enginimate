@@ -1,12 +1,16 @@
+import asyncio
+import datetime
+import json
+import logging
 from enum import Enum
 from typing import Optional
 
-import logging
 import redis.asyncio as redis
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
 
 from backend.workflow.graph import graph
 from backend.workflow.models.state import State
@@ -54,8 +58,8 @@ async def _run_graph_and_store(uuid: str, query: str):
     result_state = await graph.ainvoke(state, config={"recursion_limit": 150})
     if result_state.get("error_message"):
         logger.error(
-            f"Error occurred in the workflow for uuid: {uuid} \
-                - query: {query} - {result_state.get("error_message")}"
+            f"Error occurred in the workflow for uuid: {uuid} "
+            f'- query: {query} - {result_state.get("error_message")}'
         )
         await r.hset(
             uuid,
@@ -98,6 +102,47 @@ async def run_workflow(request: Request, background_tasks: BackgroundTasks):
     return JobResultResponse(uuid=request.uuid, status=JobStatus.PENDING)
 
 
+async def _wait_for_final_status(uuid: str, poll_interval: float = 5, timeout=60 * 30):
+    """Poll Redis until the job reaches a terminal state."""
+    now = datetime.datetime.now()
+    maxt = datetime.timedelta(seconds=timeout) + now
+    while datetime.datetime.now() <= maxt:
+        data = await r.hgetall(uuid)
+        if not data:
+            return {
+                "status": JobStatus.FAILED,
+                "error": "Job not found",
+                "url": "",
+            }
+        status = data.get("status")
+        if status in (JobStatus.COMPLETED, JobStatus.FAILED):
+            return {
+                "status": status,
+                "url": data.get("url"),
+                "error": data.get("error"),
+            }
+        await asyncio.sleep(poll_interval)
+
+
+# trigger job using /run endpoint and then get back streaming response with this endpoint
+@app.get("/events/{uuid}")
+async def stream_result(uuid: str):
+    """
+    Returns an SSE stream that emits a single event when the job finishes.
+    """
+
+    async def event_generator():
+        result = await _wait_for_final_status(uuid)
+        # The payload is sent as a JSON string in the `data` field.
+        yield {
+            "event": "job_finished",
+            "data": json.dumps(result),
+        }
+
+    return EventSourceResponse(event_generator())
+
+
+# below endpoint can be used for short polling, although its better to do SSE
 @app.get("/result/{uuid}", response_model=JobResultResponse)
 async def get_result(uuid: str):
     if not await r.exists(uuid):
