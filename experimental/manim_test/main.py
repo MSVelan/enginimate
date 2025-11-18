@@ -16,6 +16,125 @@ class DefaultTemplate(Scene):
         self.play(FadeOut(square))  # fade out animation
 """
 
+from manim import (
+    Scene,
+    Square,
+    Text,
+    VGroup,
+    Arrow,
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+    ORIGIN,
+    BLUE,
+    GREEN,
+    RED,
+    YELLOW,
+    Write,
+    Rectangle,
+)
+
+
+class Enginimate(Scene):
+    def construct(self):
+        # Stack boundary rectangle for visual reference
+        stack_boundary = Rectangle(width=2, height=4, color="WHITE")
+        stack_boundary.move_to(ORIGIN)
+
+        # Define initial empty position for TOP arrow (points to top of stack_boundary)
+        empty_top_start = stack_boundary.get_top() + DOWN * 0.5
+        empty_top_end = stack_boundary.get_top()
+
+        # Create first element 'A'
+        element_a = Square(side_length=1, color="BLUE")
+        label_a = Text("A", color="white", font_size=24)
+        label_a.move_to(element_a.get_center())
+        element_a_group = VGroup(element_a, label_a)
+        element_a_group.next_to(stack_boundary, DOWN, buff=0.1)
+
+        # Create TOP pointer initially pointing to empty position
+        top_arrow = Arrow(start=empty_top_start, end=empty_top_end, color="RED")
+
+        # Add stack boundary and initial elements
+        self.add(stack_boundary, element_a_group, top_arrow)
+        self.wait(2)  # Increased wait time
+
+        # Animate pushing 'A' into stack (move TOP from empty to 'A')
+        new_start = element_a_group.get_center() + UP * 0.5
+        new_end = element_a_group.get_center() + UP * 1
+        self.play(
+            top_arrow.animate.put_start_and_end_on(new_start, new_end), run_time=1
+        )
+        self.wait(2)  # Increased wait time
+
+        # Create second element 'B'
+        element_b = Square(side_length=1, color="GREEN")
+        label_b = Text("B", color="white", font_size=24)
+        label_b.move_to(element_b.get_center())
+        element_b_group = VGroup(element_b, label_b)
+        element_b_group.shift(RIGHT * 4)  # Start further right for slide-in
+
+        # Add element group to scene before animation
+        self.add(element_b_group)
+
+        # Animate pushing 'B' into stack
+        self.play(
+            element_b_group.animate.next_to(element_a_group, UP, aligned_edge=LEFT),
+            run_time=2,  # Increased run_time
+        )
+
+        # Calculate new TOP arrow positions based on B's final position
+        new_start = element_b_group.get_center() + UP * 0.5
+        new_end = element_b_group.get_center() + UP * 1
+
+        # Animate TOP pointer movement
+        self.play(
+            top_arrow.animate.put_start_and_end_on(start=new_start, end=new_end),
+            run_time=1,
+        )
+        self.wait(2)  # Increased wait time
+
+        # Pop element 'B'
+        # Highlight 'B' briefly
+        self.play(element_b_group.animate.scale(1.2).set_color("YELLOW"), run_time=0.5)
+
+        # Slide out 'B' to the right and move TOP up
+        self.play(
+            element_b_group.animate.shift(RIGHT * 4),
+            top_arrow.animate.put_start_and_end_on(
+                start=element_a_group.get_center() + UP * 0.5,
+                end=element_a_group.get_center() + UP * 1,
+            ),
+            run_time=2,  # Increased run_time
+        )
+
+        # Add wait after popping 'B'
+        self.wait(1)
+
+        # Pop element 'A'
+        # Highlight 'A' briefly
+        self.play(element_a_group.animate.scale(1.2).set_color("YELLOW"), run_time=0.5)
+
+        # Slide out 'A' to the right and move TOP back to empty position
+        self.play(
+            element_a_group.animate.shift(RIGHT * 4),
+            top_arrow.animate.put_start_and_end_on(
+                start=empty_top_start, end=empty_top_end
+            ),
+            run_time=2,  # Increased run_time
+        )
+
+        # Add final text showing empty stack
+        empty_text = Text("Empty Stack", font_size=28, color="RED")
+        empty_text.next_to(stack_boundary, DOWN * 2)
+        self.play(Write(empty_text), run_time=1.5)
+
+        # Hold final frame for 2 seconds
+        self.wait(2)
+
+
+"""
 import numpy as np
 from manim import *
 
@@ -45,7 +164,7 @@ class Enginimate(ZoomedScene):
         self.activate_zooming()
         self.zoomed_camera.frame.scale(1.5)  # Adjust scale factor as needed
         self.play(self.zoomed_camera.frame.animate.scale(1.5), run_time=1.5)
-
+"""
 
 """
 from manim import *
