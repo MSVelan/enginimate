@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 import logging
+import os
 from enum import Enum
 from typing import Optional
 
@@ -19,7 +20,8 @@ from backend.workflow.utils.logging_config import configure_logging
 configure_logging()
 logger = logging.getLogger(__name__)
 
-origins = ["http://localhost:3000"]
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+origins = [FRONTEND_URL]
 
 app = FastAPI()
 app.add_middleware(
