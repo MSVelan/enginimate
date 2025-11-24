@@ -1,7 +1,7 @@
 ## Overview
 
 This project aims to solve the problem of generating accurate animated videos from 
-just the prompt (uses manim-ce under then hood with agentic pipeline using langgraph).
+just the prompt (uses manim-ce under the hood with agentic pipeline using langgraph).
 
 
 ## Highlights

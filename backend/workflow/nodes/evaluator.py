@@ -31,17 +31,18 @@ logger = logging.getLogger(__name__)
 
 @wrap_model_call
 async def retry_model_middleware(request, handler):
-    max_retries = 3
+    max_retries = 5
     for attempt in range(max_retries):
         try:
+            await asyncio.sleep(2**attempt)
             return await handler(request)
         except Exception as e:
-            if attempt == max_retries - 1:
-                raise  # Re-raise if all retries are exhausted
+            await asyncio.sleep(2**attempt)
             logger.warning(
                 f"Retrying model call (attempt {attempt + 1}/{max_retries}) after error: {e}"
             )
-            await asyncio.sleep(2**attempt)
+            if attempt == max_retries - 1:
+                raise  # Re-raise if all retries are exhausted
     return await handler(request)  # Should not be reached if exceptions are re-raised
 
 
@@ -95,8 +96,9 @@ Code generated so far:
             check_every_n_seconds=2,  # Check every 100ms if a request is allowed
             # max_bucket_size=5,  # Allow a burst of up to 5 requests
         )
-        llm = init_chat_model("groq:openai/gpt-oss-20b")
+        llm = init_chat_model("groq:openai/gpt-oss-safeguard-20b")
 
+        # llm = init_chat_model("groq:openai/gpt-oss-20b")
         # llm = init_chat_model("groq:moonshotai/kimi-k2-instruct-0905")
         # llm = init_chat_model("gpt-oss-120b", model_provider="cerebras")
         # llm = init_chat_model("groq:llama-3.1-8b-instant")
@@ -109,24 +111,44 @@ Code generated so far:
 
         system_prompt = f"""
 You are a highly specialized Senior Python QA Developer for the Manim Animation Library.
+Your task is to first verify that the supplied Python code snippet correctly implements the current step of the multi-step generation process, and only if it does continue with a deeper semantic analysis of the animation.
 
-Your task is to critically analyze the provided Python code snippet based on the overall scene description and the current animation phase. Your focus is strictly on semantic and functional errors that would prevent a successful, meaningful animation.
-Do not focus too much on the code since the coding agent has access to the latest documentation and you get working code free of any syntax errors.
-You can use the available tools: `fetch_summary`, `fetch_code_snippets`, `fetch_docs` to fetch any documentation for review and providing feedback only when required.
+### STEP-COMPLIANCE CHECK
+- The current step description will be provided in the user message (e.g. “Add a rotating square”, “Create a fading-out caption”, “Render the scene as a video”, etc.).
+- Examine the code for the presence of the required objects, method calls, or actions that satisfy that description.
 
-Evaluation Criteria:
-
-1. Scene Inclusion: Are all Mobjects explicitly added to the scene?
-2. Coordinate Sanity & Placement: Are objects positioned appropriately without unnecessary overlap?
-3. Animation Logic & Dependencies: Do animations follow a logical sequence?
-4. Transformations: Do transformations make sense for the Mobject types?
-5. Timing: Is run_time appropriate? Is the timing of animation adequate enough to pay proper attention to specific parts of the screen.
-6. Step Compliance: Check whether the current step of the multi-step generation process is interpreted correctly and reflected in the produced code. Although this condition can be loosened for steps like "Render the animation as video", because the actual rendering of manim video is done by running command in the command line.
+### ANIMATION-QUALITY CHECK (run only when step-compliance is true)
+- Scene Inclusion: Are all Mobjects explicitly added to the scene?
+- Coordinate Sanity & Placement: Are objects positioned appropriately without unnecessary overlap?
+- Animation Logic & Dependencies: Do animations follow a logical sequence?
+- Transformations: Do transformations make sense for the Mobject types?
+- Timing: Is run_time appropriate? Is the timing of animation adequate enough to pay proper attention to specific parts of the screen.
 
 After analyzing the code using available tools, provide your final evaluation in this exact format:
 
 {format_instructions}
 """
+
+        #         system_prompt = f"""
+        # You are a highly specialized Senior Python QA Developer for the Manim Animation Library.
+
+        # Your task is to critically analyze the provided Python code snippet based on the overall scene description and the current animation phase. Your focus is strictly on semantic and functional errors that would prevent a successful, meaningful animation.
+        # Do not focus too much on the code since the coding agent has access to the latest documentation and you get working code free of any syntax errors.
+        # You can use the available tools: `fetch_summary`, `fetch_code_snippets`, `fetch_docs` to fetch any documentation for review and providing feedback only when required.
+
+        # Evaluation Criteria:
+
+        # 1. Scene Inclusion: Are all Mobjects explicitly added to the scene?
+        # 2. Coordinate Sanity & Placement: Are objects positioned appropriately without unnecessary overlap?
+        # 3. Animation Logic & Dependencies: Do animations follow a logical sequence?
+        # 4. Transformations: Do transformations make sense for the Mobject types?
+        # 5. Timing: Is run_time appropriate? Is the timing of animation adequate enough to pay proper attention to specific parts of the screen.
+        # 6. Step Compliance: Check whether the current step of the multi-step generation process is interpreted correctly and reflected in the produced code. Although this condition can be loosened for steps like "Render the animation as video", because the actual rendering of manim video is done by running command in the command line.
+
+        # After analyzing the code using available tools, provide your final evaluation in this exact format:
+
+        # {format_instructions}
+        # """
         agent = create_agent(
             llm,
             system_prompt=system_prompt,
@@ -145,6 +167,7 @@ After analyzing the code using available tools, provide your final evaluation in
                 ToolRetryMiddleware(
                     max_retries=2,
                     on_failure="return_message",
+                    initial_delay=2,
                 ),
             ],
             checkpointer=InMemorySaver(),
@@ -161,7 +184,7 @@ After analyzing the code using available tools, provide your final evaluation in
             return parser.parse(final_message)
         except:
             # Fallback: use LLM to reformat into structured output
-            llm = init_chat_model("groq:openai/gpt-oss-safeguard-20b")
+            llm = init_chat_model("groq:meta-llama/llama-4-scout-17b-16e-instruct")
             max_attempts = 3
             for attempt in range(max_attempts):
                 try:
@@ -176,6 +199,7 @@ After analyzing the code using available tools, provide your final evaluation in
                         ]
                     )
                 except:
+                    await asyncio.sleep(2**attempt)
                     if attempt == max_attempts - 1:
                         raise
 

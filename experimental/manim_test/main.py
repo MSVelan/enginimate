@@ -17,22 +17,22 @@ class DefaultTemplate(Scene):
 """
 
 from manim import (
+    BLUE,
+    DOWN,
+    GREEN,
+    LEFT,
+    ORIGIN,
+    RED,
+    RIGHT,
+    UP,
+    YELLOW,
+    Arrow,
+    Rectangle,
     Scene,
     Square,
     Text,
     VGroup,
-    Arrow,
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN,
-    ORIGIN,
-    BLUE,
-    GREEN,
-    RED,
-    YELLOW,
     Write,
-    Rectangle,
 )
 
 

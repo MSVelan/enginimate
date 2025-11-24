@@ -26,6 +26,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 r = redis.from_url("redis://localhost:6379/0", decode_responses=True)
@@ -142,9 +144,9 @@ async def stream_result(uuid: str):
     return EventSourceResponse(event_generator())
 
 
-# below endpoint can be used for short polling, although its better to do SSE
-@app.get("/result/{uuid}", response_model=JobResultResponse)
-async def get_result(uuid: str):
+# below endpoint can be used for short polling
+@app.get("/status/{uuid}", response_model=JobResultResponse)
+async def get_status(uuid: str):
     if not await r.exists(uuid):
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -154,6 +156,26 @@ async def get_result(uuid: str):
         status=JobStatus(data["status"]),
         url=data.get("url") or None,
         error=data.get("error") or None,
+    )
+
+
+# below endpoint can be used for long polling
+@app.get("/result/{uuid}", response_model=JobResultResponse)
+async def get_result(uuid: str):
+    if not await r.exists(uuid):
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    result = await _wait_for_final_status(uuid)
+    if result is None:
+        raise HTTPException(
+            status_code=500, detail="Time limit exceeded for job during long polling"
+        )
+
+    return JobResultResponse(
+        uuid=uuid,
+        status=result.get("status") or JobStatus.FAILED,
+        url=result.get("url") or None,
+        error=result.get("error") or None,
     )
 
 

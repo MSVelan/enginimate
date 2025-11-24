@@ -182,3 +182,47 @@ jobs:
               print(f"Error sending webhook: {repr(e)}")
               # Don't fail the workflow if webhook fails
           EOFPYTHON
+
+  notify_failure:
+    if: failure()
+    runs-on: ubuntu-latest
+    needs: [render] # Replace with your actual job name
+    steps:
+      - name: Send failure webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ERROR_MSG="Workflow failed"
+
+          # Try to get actual error from GitHub API
+          RUN_DATA=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs")
+
+          # Extract the conclusion message from failed steps
+          FAILED_STEP=$(echo "$RUN_DATA" | jq -r '.jobs[] | select(.name=="render") | .steps[] | select(.conclusion=="failure") | "\(.name): \(.conclusion)"' | head -1)
+
+          if [ ! -z "$FAILED_STEP" ]; then
+            ERROR_MSG="Step failed: $FAILED_STEP"
+          fi
+
+          # Add job result for more context
+          JOB_RESULT="${{ needs.render.result }}"
+          ERROR_MSG="$ERROR_MSG (Job status: $JOB_RESULT)"
+
+          # Construct the payload
+          PAYLOAD='{"uuid":"'${{ github.event.client_payload.uuid }}'","status":"failed","error":"'"$ERROR_MSG"'","run_id":"'${{ github.run_id }}'"}'
+          PAYLOAD=$(echo "$PAYLOAD" | jq -c -S .)
+
+          # Generate HMAC signature
+          SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | sed 's/^.* //')"
+
+          # Send webhook
+          curl -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$PAYLOAD" \
+            -w "\nHTTP Status: %{http_code}\n" \
+            || echo "Webhook failed but continuing"

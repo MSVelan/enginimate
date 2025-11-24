@@ -103,7 +103,7 @@ async def tester(request: ExecutionRequest, background_tasks: BackgroundTasks):
 
 
 async def _wait_for_code_execution(
-    uuid: str, poll_interval: float = 5, timeout=60 * 30
+    uuid: str, poll_interval: float = 5, timeout: int = 60 * 30
 ):
     """Poll Redis until the job reaches a terminal state."""
     now = datetime.datetime.now()
@@ -123,12 +123,12 @@ async def _wait_for_code_execution(
                 "error": data.get("error"),
                 "error_message": data.get("error_message"),
             }
-        await asyncio.sleep(poll_interval)
+        await asyncio.sleep(float(poll_interval))
     raise HTTPException(detail="Timeout occurred")
 
 
 @app.get("/result/test-code/{uuid}")
-async def get_test_result(uuid: str, poll_interval=5, timeout=60 * 30):
+async def get_test_result(uuid: str, poll_interval: float = 5, timeout: int = 60 * 30):
     try:
         return await _wait_for_code_execution(uuid, poll_interval, timeout)
     except:

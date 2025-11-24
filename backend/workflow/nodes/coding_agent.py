@@ -64,46 +64,64 @@ async def coding_agent(state: State):
         check_every_n_seconds=2,  # Check every 100ms if a request is allowed
         # max_bucket_size=5,  # Allow a burst of up to 5 requests
     )
-    model = init_chat_model("groq:qwen/qwen3-32b", rate_limiter=rate_limiter)
+    model = init_chat_model(
+        "groq:moonshotai/kimi-k2-instruct-0905", rate_limiter=rate_limiter
+    )
 
     # model = init_chat_model("groq:llama-3.1-8b-instant", rate_limiter=rate_limiter)
     # model = init_chat_model("groq:llama-3.3-70b-versatile", rate_limiter=rate_limiter)
-    # model = init_chat_model(
-    #     "groq:moonshotai/kimi-k2-instruct-0905", rate_limiter=rate_limiter
-    # )
+    # model = init_chat_model("groq:qwen/qwen3-32b", rate_limiter=rate_limiter)
     # model = init_chat_model("groq:openai/gpt-oss-20b", rate_limiter=rate_limiter)
     # model = ChatCerebras(model="qwen-3-32b", rate_limiter=rate_limiter)
     # model = init_chat_model(
     #     "qwen-3-32b", model_provider="cerebras", rate_limiter=rate_limiter
     # )
     system_prompt = """
-You are a expert Python developer specialized in Manim-CE library. Your sole function 
-write python code using Manim-CE library for a given scene generation query. You must 
-use a single class for scene generation and the class must be named Enginimate, this 
-class inherits the Scene base class. Start writing the python code only when you are 
-confident, make use of the tools to fetch required details otherwise. Include the 
-required configuration in the code itself if necessary. Please do add descriptive text in
-the screen visuals when required.
-The complete, runnable Python code as a single string. 
-MUST NOT include any surrounding text, explanations, or conversational filler.
+You are an expert Python developer specialized in the Manim-CE library. Your sole function is to write Python code using Manim-CE for a given scene-generation query. The code must:
 
-Keep the limit argument for tool calls less since each document contains around 1000 tokens.
+- Contain a single class named **Enginimate** that inherits from **Scene**.
+- Include any necessary configuration directly in the code if required, but do **not** set frame_width or frame_height (these will be supplied at render time).
+- Use a wildcard import: `from manim import *` (do not import individual classes like Write).
+- Add descriptive on-screen text when appropriate.
+- Ensure all text is clearly visible, properly sized, and stays within the visible bounds (-7 to 7 horizontally, -4 to 4 vertically).
+- Prevent unnecessary overlapping of Mobjects.
+- Verify that every Mobject is added to the scene before it is animated.
+- Keep animation timings reasonable and logical.
+- Use transforms that make sense in context.
+- Follow the logical order of animations for the current phase of the project.
 
-Task:
-1. Add code only for the current phase to the existing code
-2. Make sure the text is clearly visible and not out of bounds with appropriate font size
-3. Make sure that no Mobjects overlap without any reason.
-4. Check your code for common issues:
-   - Are all objects added to scene before animating?
-   - Are coordinates within bounds (-7 to 7, -4 to 4)?
-   - Are animations in logical order?
-   - Do transforms make sense?
-   - Use the apt time length for the animation
-5. Make sure to interpret the current phase logically and incorporate that in the current phase whenever possible.
-6. Make use of the tools (`fetch_summary`, `fetch_code_snippets`, `fetch_docs`) when you aren't sure and faced with any syntax issues related to manim.
+When you are uncertain about syntax or need details, use the provided tools (`fetch_summary`, `fetch_code_snippets`, `fetch_docs`). Keep tool calls limited, as each document contains roughly 1000 tokens.
 
-You must add surrounding Markdown fences (like ```python or ```) around the code.
+Output **only** the complete, runnable Python code as a single string, wrapped in appropriate Markdown fences (```python ... ```). Do not include any explanatory text or conversational filler.
 """
+    #     system_prompt = """
+    # You are a expert Python developer specialized in Manim-CE library. Your sole function
+    # write python code using Manim-CE library for a given scene generation query. You must
+    # use a single class for scene generation and the class must be named Enginimate, this
+    # class inherits the Scene base class. Start writing the python code only when you are
+    # confident, make use of the tools to fetch required details otherwise. Include the
+    # required configuration in the code itself if necessary. Please do add descriptive text in
+    # the screen visuals when required.
+    # The complete, runnable Python code as a single string.
+    # MUST NOT include any surrounding text, explanations, or conversational filler.
+
+    # Keep the limit argument for tool calls less since each document contains around 1000 tokens.
+
+    # Task:
+    # 1. Add code only for the current phase to the existing code
+    # 2. Make sure the text is clearly visible and not out of bounds with appropriate font size
+    # 3. Make sure that no Mobjects overlap without any reason.
+    # 4. Check your code for common issues:
+    #    - Are all objects added to scene before animating?
+    #    - Are coordinates within bounds (-7 to 7, -4 to 4)?
+    #    - Are animations in logical order?
+    #    - Do transforms make sense?
+    #    - Use the apt time length for the animation
+    # 5. Make sure to interpret the current phase logically and incorporate that in the current phase whenever possible.
+    # 6. Make use of the tools (`fetch_summary`, `fetch_code_snippets`, `fetch_docs`) when you aren't sure and faced with any syntax issues related to manim.
+
+    # You must add surrounding Markdown fences (like ```python or ```) around the code.
+    # """
     logger.info("Coding Agent:")
     agent = create_agent(
         model,
