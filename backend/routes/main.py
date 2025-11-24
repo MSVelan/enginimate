@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 origins = [FRONTEND_URL]
 
+logger.info(f"Added origins to the CORS: {origins}")
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +34,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-r = redis.from_url("redis://localhost:6379/0", decode_responses=True)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+r = redis.from_url(REDIS_URL, decode_responses=True)
 
 
 class JobStatus(str, Enum):
