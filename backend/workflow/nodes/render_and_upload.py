@@ -54,7 +54,7 @@ async def _make_async_post_request(url, headers, payload, max_retries=3):
                     return resp
             except Exception as e:
                 logger.warning(f"Error during POST request: {e}")
-                await asyncio.sleep(1)
+                await asyncio.sleep(60)
                 if i == max_retries - 1:
                     raise e
 
@@ -69,6 +69,6 @@ async def _make_async_get_request(url, params, max_retries=3):
                     return resp
             except Exception as e:
                 logger.warning(f"Error during GET request: {e}")
-                await asyncio.sleep(1)
+                await asyncio.sleep(60)
                 if i == max_retries - 1:
                     raise e
