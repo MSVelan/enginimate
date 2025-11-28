@@ -8,13 +8,15 @@ from backend.workflow.models.state import State
 
 logger = logging.getLogger(__name__)
 
+RENDER_URL = "https://enginimate-render-service.vercel.app"
+
 
 async def render_and_upload(state: State):
     job_uuid = str(uuid.uuid4())
     logger.info("Render and upload:")
     try:
         await _make_async_post_request(
-            url="https://enginimate-render-service.onrender.com/trigger-rendering",
+            url=f"{RENDER_URL}/trigger-rendering",
             headers=None,
             payload={
                 "uuid": job_uuid,
@@ -26,7 +28,7 @@ async def render_and_upload(state: State):
 
         # wait upto 15 mins for completion
         result = await _make_async_get_request(
-            url=f"https://enginimate-render-service.onrender.com/render-result/{job_uuid}",
+            url=f"{RENDER_URL}/render-result/{job_uuid}",
             params={"wait": "true", "timeout": 900},
         )
         logger.info("Done rendering and uploading")
@@ -54,7 +56,7 @@ async def _make_async_post_request(url, headers, payload, max_retries=3):
                     return resp
             except Exception as e:
                 logger.warning(f"Error during POST request: {e}")
-                await asyncio.sleep(60)
+                await asyncio.sleep(10)
                 if i == max_retries - 1:
                     raise e
 
@@ -69,6 +71,6 @@ async def _make_async_get_request(url, params, max_retries=3):
                     return resp
             except Exception as e:
                 logger.warning(f"Error during GET request: {e}")
-                await asyncio.sleep(60)
+                await asyncio.sleep(10)
                 if i == max_retries - 1:
                     raise e
