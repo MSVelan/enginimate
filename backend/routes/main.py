@@ -109,7 +109,7 @@ async def run_workflow(request: Request, background_tasks: BackgroundTasks):
     return JobResultResponse(uuid=request.uuid, status=JobStatus.PENDING)
 
 
-async def _wait_for_final_status(uuid: str, poll_interval: float = 5, timeout=60 * 30):
+async def _wait_for_final_status(uuid: str, poll_interval: float = 5, timeout=60 * 45):
     """Poll Redis until the job reaches a terminal state."""
     now = datetime.datetime.now()
     maxt = datetime.timedelta(seconds=timeout) + now
@@ -182,6 +182,20 @@ async def get_result(uuid: str):
         url=result.get("url") or None,
         error=result.get("error") or None,
     )
+
+
+@app.get("/")
+async def root():
+    """API documentation endpoint"""
+    return {
+        "message": "Manim Workflow API",
+        "endpoints": {
+            "POST /run": "Trigger Manim workflow job",
+            "GET /status/{uuid}": "Check job status",
+            "GET /result/{uuid}": "Get result for the job uuid (supports long polling)",
+            "GET /events/{uuid}": "SSE stream that emits event when job finishes",
+        },
+    }
 
 
 if __name__ == "__main__":
