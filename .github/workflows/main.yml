@@ -15,23 +15,19 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            python3-dev \
-            libcairo2-dev \
-            libpango1.0-dev \
-            dvisvgm \
-            ffmpeg \
-            texlive \
-            texlive-latex-recommended \
-            texlive-latex-extra \
-            texlive-pictures \
-            texlive-fonts-extra \
-            texlive-science \
-            tipa \
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-manim-cloudinary-httpx-numpy
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install and cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential python3-dev libcairo2-dev libpango1.0-dev dvisvgm ffmpeg texlive texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-fonts-extra texlive-science tipa
+          version: 1.0
 
       - name: Install Manim
         run: |
